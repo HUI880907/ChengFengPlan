@@ -7,6 +7,7 @@ import Charts
 // MARK: - StatisticsView
 
 struct StatisticsView: View {
+    @Environment(TaskStore.self) private var taskStore
     @State private var timeRange: TimeRange = .week
 
     enum TimeRange: String, CaseIterable {
@@ -15,30 +16,78 @@ struct StatisticsView: View {
         case year = "本年"
     }
 
-    // 模拟数据
-    private let completionData: [CompletionData] = [
-        .init(date: "周一", count: 3),
-        .init(date: "周二", count: 5),
-        .init(date: "周三", count: 2),
-        .init(date: "周四", count: 7),
-        .init(date: "周五", count: 4),
-        .init(date: "周六", count: 1),
-        .init(date: "周日", count: 6)
-    ]
+    // MARK: - Computed Statistics from TaskStore
 
-    private let priorityData: [PriorityData] = [
-        .init(priority: "低", count: 12, color: .priorityLow),
-        .init(priority: "中", count: 18, color: .priorityMedium),
-        .init(priority: "高", count: 8, color: .priorityHigh),
-        .init(priority: "紧急", count: 3, color: .priorityUrgent)
-    ]
+    private var totalTasks: Int {
+        taskStore.tasks.count
+    }
 
-    private let tagData: [TagData] = [
-        .init(tag: "工作", count: 15),
-        .init(tag: "学习", count: 10),
-        .init(tag: "生活", count: 8),
-        .init(tag: "健康", count: 5)
-    ]
+    private var completedTasks: [TaskItem] {
+        taskStore.tasks.filter { $0.status == .completed }
+    }
+
+    private var completionRate: String {
+        guard totalTasks > 0 else { return "0%" }
+        return "\(Int(Double(completedTasks.count) / Double(totalTasks) * 100))%"
+    }
+
+    private var overdueCount: Int {
+        taskStore.getOverdueTasks().count
+    }
+
+    private var completionData: [CompletionData] {
+        let calendar = Calendar.current
+        let now = Date()
+        var data: [CompletionData] = []
+
+        let dayCount: Int
+        switch timeRange {
+        case .week: dayCount = 7
+        case .month: dayCount = 30
+        case .year: dayCount = 365
+        }
+
+        for i in stride(from: dayCount - 1, through: 0, by: -1) {
+            guard let date = calendar.date(byAdding: .day, value: -i, to: now) else { continue }
+            let dayName: String
+            if timeRange == .week {
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "zh_CN")
+                formatter.dateFormat = "EEE"
+                dayName = formatter.string(from: date)
+            } else if timeRange == .month {
+                dayName = "\(calendar.component(.day, from: date))"
+            } else {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "M/d"
+                dayName = formatter.string(from: date)
+            }
+
+            let count = completedTasks.filter { task in
+                guard let completedAt = task.completedAt else { return false }
+                return calendar.isDate(completedAt, inSameDayAs: date)
+            }.count
+
+            data.append(.init(date: dayName, count: count))
+        }
+        return data
+    }
+
+    private var priorityData: [PriorityData] {
+        [
+            .init(priority: "低", count: taskStore.tasks.filter { $0.priority == .low }.count, color: .priorityLow),
+            .init(priority: "中", count: taskStore.tasks.filter { $0.priority == .medium }.count, color: .priorityMedium),
+            .init(priority: "高", count: taskStore.tasks.filter { $0.priority == .high }.count, color: .priorityHigh),
+            .init(priority: "紧急", count: taskStore.tasks.filter { $0.priority == .urgent }.count, color: .priorityUrgent)
+        ]
+    }
+
+    private var tagData: [TagData] {
+        taskStore.tags.map { tag in
+            let count = taskStore.tasks.filter { $0.tags.contains(tag.id) }.count
+            return .init(tag: tag.name, count: count)
+        }.sorted { $0.count > $1.count }
+    }
 
     var body: some View {
         NavigationStack {
@@ -57,42 +106,64 @@ struct StatisticsView: View {
                     statisticsCards
 
                     // MARK: Completion Trend Chart
-                    chartSection(title: "任务完成趋势") {
-                        Chart(completionData) { item in
-                            BarMark(
-                                x: .value("日期", item.date),
-                                y: .value("数量", item.count)
-                            )
-                            .foregroundStyle(Color.themePrimary.gradient)
-                            .cornerRadius(4)
+                    if !completionData.isEmpty && completionData.contains(where: { $0.count > 0 }) {
+                        chartSection(title: "任务完成趋势") {
+                            Chart(completionData) { item in
+                                BarMark(
+                                    x: .value("日期", item.date),
+                                    y: .value("数量", item.count)
+                                )
+                                .foregroundStyle(Color.themePrimary.gradient)
+                                .cornerRadius(4)
+                            }
+                            .frame(height: 200)
                         }
-                        .frame(height: 200)
                     }
 
                     // MARK: Priority Distribution Chart
-                    chartSection(title: "优先级分布") {
-                        Chart(priorityData) { item in
-                            SectorMark(
-                                angle: .value("数量", item.count),
-                                innerRadius: .ratio(0.5),
-                                angularInset: 2
-                            )
-                            .foregroundStyle(item.color)
+                    if priorityData.contains(where: { $0.count > 0 }) {
+                        chartSection(title: "优先级分布") {
+                            Chart(priorityData) { item in
+                                SectorMark(
+                                    angle: .value("数量", item.count),
+                                    innerRadius: .ratio(0.5),
+                                    angularInset: 2
+                                )
+                                .foregroundStyle(item.color)
+                            }
+                            .frame(height: 200)
                         }
-                        .frame(height: 200)
                     }
 
                     // MARK: Tag Distribution Chart
-                    chartSection(title: "标签分布") {
-                        Chart(tagData) { item in
-                            BarMark(
-                                x: .value("标签", item.tag),
-                                y: .value("数量", item.count)
-                            )
-                            .foregroundStyle(Color.themeSecondary.gradient)
-                            .cornerRadius(4)
+                    if !tagData.isEmpty {
+                        chartSection(title: "标签分布") {
+                            Chart(tagData) { item in
+                                BarMark(
+                                    x: .value("标签", item.tag),
+                                    y: .value("数量", item.count)
+                                )
+                                .foregroundStyle(Color.themeSecondary.gradient)
+                                .cornerRadius(4)
+                            }
+                            .frame(height: 200)
                         }
-                        .frame(height: 200)
+                    }
+
+                    // MARK: Empty State
+                    if totalTasks == 0 {
+                        VStack(spacing: 12) {
+                            Image(systemName: "chart.bar")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.secondary)
+                            Text("暂无任务数据")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                            Text("添加任务后，这里将显示统计信息")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 40)
                     }
                 }
                 .padding(.vertical)
@@ -105,9 +176,9 @@ struct StatisticsView: View {
 
     private var statisticsCards: some View {
         HStack(spacing: 12) {
-            StatCard(title: "总任务", value: "41", icon: "list.number", color: .blue)
-            StatCard(title: "完成率", value: "78%", icon: "checkmark.circle", color: .green)
-            StatCard(title: "逾期", value: "2", icon: "exclamationmark.triangle", color: .red)
+            StatCard(title: "总任务", value: "\(totalTasks)", icon: "list.number", color: .blue)
+            StatCard(title: "完成率", value: completionRate, icon: "checkmark.circle", color: .green)
+            StatCard(title: "逾期", value: "\(overdueCount)", icon: "exclamationmark.triangle", color: .red)
         }
         .padding(.horizontal)
     }
@@ -180,4 +251,5 @@ struct TagData: Identifiable {
 
 #Preview {
     StatisticsView()
+        .environment(TaskStore.shared)
 }

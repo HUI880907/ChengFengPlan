@@ -6,37 +6,68 @@ import SwiftUI
 // MARK: - SettingsView
 
 struct SettingsView: View {
+    @Environment(TaskStore.self) private var taskStore
+    @Environment(\.colorScheme) private var systemColorScheme
     @State private var aiProvider: AIProvider = .zhipu
     @State private var apiKey = ""
+    @State private var apiBaseURL = ""
     @State private var selectedModel = ""
-    @State private var notificationsEnabled = true
+    @State private var notificationsEnabled = false
+    @State private var notificationPermissionStatus: String = "未请求"
     @State private var reminderTime = Date()
-    @State private var themeColor: Color = .blue
     @State private var darkModeEnabled = false
+    @State private var appIcon = 0
+    @State private var defaultPriority: TaskPriority = .medium
+    @State private var defaultSort: SortOption = .dueDate
+    @State private var showCompletedTasks = true
+    @State private var autoBackupEnabled = false
     @State private var showingExportSheet = false
     @State private var showingImportSheet = false
     @State private var showingPrivacyPolicy = false
-    @State private var appVersion = "2.0.0"
+    @State private var showingClearDataAlert = false
+    @State private var appVersion = "3.0.0"
 
     /// 根据 AI 提供商返回对应的模型列表
     private var availableModels: [String] {
         switch aiProvider {
         case .zhipu:
-            return ["glm-4", "glm-4-plus", "glm-4-flash"]
+            return ["glm-4", "glm-4-plus", "glm-4-flash", "glm-4-long"]
         case .tongyi:
-            return ["qwen-max", "qwen-plus", "qwen-turbo"]
+            return ["qwen-max", "qwen-plus", "qwen-turbo", "qwen-long"]
         case .wenxin:
-            return ["ernie-4.0", "ernie-3.5", "ernie-speed"]
+            return ["ernie-4.0", "ernie-3.5", "ernie-speed", "ernie-lite"]
         case .spark:
-            return ["spark-v4.0", "spark-v3.5", "spark-v3.0"]
+            return ["spark-v4.0", "spark-v3.5", "spark-v3.0", "spark-lite"]
         case .moonshot:
             return ["moonshot-v1-128k", "moonshot-v1-32k", "moonshot-v1-8k"]
         case .minimax:
             return ["abab6.5s", "abab6", "abab5.5"]
         case .zeroOne:
-            return ["yi-large", "yi-medium", "yi-spark"]
+            return ["yi-large", "yi-medium", "yi-spark", "yi-lightning"]
         case .custom:
             return ["custom"]
+        }
+    }
+
+    /// AI提供商API Key获取链接
+    private var providerAPIKeyURL: String {
+        switch aiProvider {
+        case .zhipu:
+            return "https://open.bigmodel.cn/usercenter/apikeys"
+        case .tongyi:
+            return "https://dashscope.console.aliyun.com/apiKey"
+        case .wenxin:
+            return "https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application"
+        case .spark:
+            return "https://xinghuo.xfyun.cn/sparkapi"
+        case .moonshot:
+            return "https://platform.moonshot.cn/console/api-keys"
+        case .minimax:
+            return "https://platform.minimaxi.com/account/apikey"
+        case .zeroOne:
+            return "https://platform.01.ai/apikeys"
+        case .custom:
+            return ""
         }
     }
 
@@ -44,17 +75,40 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 // MARK: AI 设置
-                Section("AI 设置") {
+                Section {
                     Picker("提供商", selection: $aiProvider) {
                         ForEach(AIProvider.allCases, id: \.self) { provider in
                             Text(provider.rawValue).tag(provider)
                         }
                     }
 
+                    if aiProvider != .custom {
+                        Link(destination: URL(string: providerAPIKeyURL)!) {
+                            HStack {
+                                Label("获取 API Key", systemImage: "link")
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+
                     SecureField("API Key", text: $apiKey)
                         .onChange(of: apiKey) { _, newValue in
                             SecureStore.shared.saveString(key: "ai_api_key_\(aiProvider.rawValue)", value: newValue)
+                            AIManager.shared.setAPIKey(newValue, for: aiProvider)
                         }
+
+                    if aiProvider == .custom {
+                        HStack {
+                            Text("API 地址")
+                            Spacer()
+                            TextField("https://...", text: $apiBaseURL)
+                                .multilineTextAlignment(.trailing)
+                                .keyboardType(.URL)
+                                .textInputAutocapitalization(.never)
+                        }
+                    }
 
                     Picker("模型", selection: $selectedModel) {
                         ForEach(availableModels, id: \.self) { model in
@@ -63,26 +117,99 @@ struct SettingsView: View {
                     }
                     .onChange(of: aiProvider) { _, _ in
                         selectedModel = availableModels.first ?? ""
+                        apiKey = SecureStore.shared.loadString(key: "ai_api_key_\(aiProvider.rawValue)") ?? ""
+                        apiBaseURL = aiProvider.defaultBaseURL
                     }
+
+                    LabeledContent("状态", value: apiKey.isEmpty ? "未配置" : "已配置")
+                        .foregroundStyle(apiKey.isEmpty ? .secondary : .green)
+                } header: {
+                    Text("AI 设置")
+                } footer: {
+                    Text("选择 AI 提供商并配置 API Key 以启用 AI 助手功能。API Key 安全存储在设备钥匙串中。")
                 }
 
                 // MARK: 通知设置
-                Section("通知") {
+                Section {
                     Toggle("启用通知", isOn: $notificationsEnabled)
+                        .onChange(of: notificationsEnabled) { _, isOn in
+                            Task {
+                                if isOn {
+                                    let granted = await NotificationScheduler.shared.requestAuthorization()
+                                    await MainActor.run {
+                                        if !granted {
+                                            notificationsEnabled = false
+                                            notificationPermissionStatus = "被拒绝"
+                                        } else {
+                                            notificationPermissionStatus = "已授权"
+                                            // 设置每日提醒
+                                            await NotificationScheduler.shared.scheduleDailyReminder(time: reminderTime)
+                                        }
+                                    }
+                                } else {
+                                    NotificationScheduler.shared.cancelDailyReminder()
+                                    notificationPermissionStatus = "已关闭"
+                                }
+                            }
+                        }
+
+                    LabeledContent("通知权限", value: notificationPermissionStatus)
 
                     if notificationsEnabled {
                         DatePicker("每日提醒时间", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                            .onChange(of: reminderTime) { _, newTime in
+                                Task {
+                                    NotificationScheduler.shared.cancelDailyReminder()
+                                    await NotificationScheduler.shared.scheduleDailyReminder(time: newTime)
+                                }
+                            }
+
+                        NavigationLink {
+                            NotificationSettingsView()
+                        } label: {
+                            Label("通知详情设置", systemImage: "bell.badge")
+                        }
                     }
+                } header: {
+                    Text("通知")
+                } footer: {
+                    Text("开启通知后，APP即使被划掉也能在设定时间发送通知提醒。")
                 }
 
                 // MARK: 外观设置
-                Section("外观") {
-                    ColorPicker("主题色", selection: $themeColor)
-                    Toggle("深色模式", isOn: $darkModeEnabled)
+                Section {
+                    Picker("外观模式", selection: $darkModeEnabled) {
+                        Label("浅色模式", systemImage: "sun.max").tag(false)
+                        Label("深色模式", systemImage: "moon").tag(true)
+                    }
+                    .pickerStyle(.inline)
+                } header: {
+                    Text("外观")
+                } footer: {
+                    Text("选择浅色或深色显示模式。")
+                }
+
+                // MARK: 任务默认设置
+                Section {
+                    Picker("默认优先级", selection: $defaultPriority) {
+                        ForEach(TaskPriority.allCases, id: \.self) { p in
+                            Text(p.displayName).tag(p)
+                        }
+                    }
+
+                    Picker("默认排序", selection: $defaultSort) {
+                        ForEach(SortOption.allCases, id: \.self) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
+
+                    Toggle("显示已完成任务", isOn: $showCompletedTasks)
+                } header: {
+                    Text("任务默认设置")
                 }
 
                 // MARK: 数据管理
-                Section("数据管理") {
+                Section {
                     Button {
                         showingExportSheet = true
                     } label: {
@@ -95,21 +222,19 @@ struct SettingsView: View {
                         Label("导入数据", systemImage: "square.and.arrow.down")
                     }
 
-                    Button {
-                        // 备份逻辑
-                    } label: {
-                        Label("备份到 iCloud", systemImage: "icloud.and.arrow.up")
-                    }
+                    Toggle("自动备份", isOn: $autoBackupEnabled)
 
-                    Button {
-                        // 恢复逻辑
+                    Button(role: .destructive) {
+                        showingClearDataAlert = true
                     } label: {
-                        Label("从 iCloud 恢复", systemImage: "icloud.and.arrow.down")
+                        Label("清除所有数据", systemImage: "trash")
                     }
+                } header: {
+                    Text("数据管理")
                 }
 
                 // MARK: 关于
-                Section("关于") {
+                Section {
                     HStack {
                         Text("版本")
                         Spacer()
@@ -126,11 +251,16 @@ struct SettingsView: View {
                     Link(destination: URL(string: "https://example.com/support")!) {
                         Label("帮助与支持", systemImage: "questionmark.circle")
                     }
+                } header: {
+                    Text("关于")
                 }
             }
             .navigationTitle("设置")
+            .onAppear {
+                loadSettings()
+            }
         }
-        .preferredColorScheme(darkModeEnabled ? .dark : nil)
+        .preferredColorScheme(darkModeEnabled ? .dark : .light)
         .sheet(isPresented: $showingExportSheet) {
             ExportDataView()
         }
@@ -140,6 +270,75 @@ struct SettingsView: View {
         .sheet(isPresented: $showingPrivacyPolicy) {
             PrivacyPolicyView()
         }
+        .alert("确认清除数据", isPresented: $showingClearDataAlert) {
+            Button("取消", role: .cancel) {}
+            Button("清除", role: .destructive) {
+                taskStore.tasks.removeAll()
+                taskStore.tags.removeAll()
+            }
+        } message: {
+            Text("此操作将清除所有任务和标签数据，且无法恢复。")
+        }
+    }
+
+    // MARK: - Load Settings
+
+    private func loadSettings() {
+        apiKey = SecureStore.shared.loadString(key: "ai_api_key_\(aiProvider.rawValue)") ?? ""
+        apiBaseURL = aiProvider.defaultBaseURL
+        selectedModel = availableModels.first ?? ""
+
+        // 检查通知权限状态
+        Task {
+            let status = await NotificationScheduler.shared.checkAuthorizationStatus()
+            await MainActor.run {
+                switch status {
+                case .authorized:
+                    notificationPermissionStatus = "已授权"
+                    notificationsEnabled = true
+                case .denied:
+                    notificationPermissionStatus = "被拒绝"
+                    notificationsEnabled = false
+                case .notDetermined:
+                    notificationPermissionStatus = "未请求"
+                default:
+                    notificationPermissionStatus = "未知"
+                }
+            }
+        }
+    }
+}
+
+// MARK: - NotificationSettingsView
+
+struct NotificationSettingsView: View {
+    @State private var taskReminderEnabled = true
+    @State private var overdueReminderEnabled = true
+    @State private var dailyReminderEnabled = true
+    @State private var soundEnabled = true
+
+    var body: some View {
+        List {
+            Section("提醒类型") {
+                Toggle("任务截止提醒", isOn: $taskReminderEnabled)
+                Toggle("逾期任务提醒", isOn: $overdueReminderEnabled)
+                Toggle("每日任务提醒", isOn: $dailyReminderEnabled)
+            }
+
+            Section("提醒方式") {
+                Toggle("声音", isOn: $soundEnabled)
+            }
+
+            Section {
+                Button {
+                    NotificationScheduler.shared.cancelAllNotifications()
+                } label: {
+                    Label("清除所有待发送通知", systemImage: "bell.slash")
+                }
+            }
+        }
+        .navigationTitle("通知详情")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -164,7 +363,6 @@ struct ExportDataView: View {
                     .multilineTextAlignment(.center)
 
                 Button {
-                    // 执行导出
                     dismiss()
                 } label: {
                     Text("导出")
@@ -214,7 +412,6 @@ struct ImportDataView: View {
                     .multilineTextAlignment(.center)
 
                 Button {
-                    // 执行导入
                     dismiss()
                 } label: {
                     Text("选择文件")
@@ -255,7 +452,7 @@ struct PrivacyPolicyView: View {
                     Text("隐私政策")
                         .font(.title.bold())
 
-                    Text("最后更新日期：2024年1月1日")
+                    Text("最后更新日期：2025年1月1日")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -296,4 +493,5 @@ struct PrivacyPolicyView: View {
 
 #Preview {
     SettingsView()
+        .environment(TaskStore.shared)
 }

@@ -39,6 +39,16 @@ struct AddEditTaskView: View {
         }
     }
 
+    /// 便利初始化器：从日历快速添加任务，预设截止日期
+    init(initialDueDate: Date) {
+        self.task = nil
+        _title = State(initialValue: "")
+        _priority = State(initialValue: .medium)
+        _dueDate = State(initialValue: initialDueDate)
+        _hasDueDate = State(initialValue: true)
+        _tags = State(initialValue: [])
+    }
+
     var body: some View {
         NavigationStack {
             Form {

@@ -6,8 +6,10 @@ import SwiftUI
 // MARK: - ContentView
 
 struct ContentView: View {
+    @Environment(TaskStore.self) private var taskStore
     @State private var selectedTab = 0
     @State private var showingBriefing = false
+    @State private var showingAddTask = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -21,7 +23,7 @@ struct ContentView: View {
             // MARK: 看板
             KanbanBoardView()
                 .tabItem {
-                    Label("看板", systemImage: "columns")
+                    Label("看板", systemImage: "square.grid.2x2")
                 }
                 .tag(1)
 
@@ -39,10 +41,10 @@ struct ContentView: View {
                 }
                 .tag(3)
 
-            // MARK: AI助手
+            // MARK: 助手
             AIAssistantView()
                 .tabItem {
-                    Label("AI助手", systemImage: "sparkles")
+                    Label("助手", systemImage: "sparkles")
                 }
                 .tag(4)
 
@@ -56,8 +58,14 @@ struct ContentView: View {
         .overlay(alignment: .topTrailing) {
             dailyBriefingButton
         }
+        .overlay(alignment: .bottomTrailing) {
+            addButton
+        }
         .sheet(isPresented: $showingBriefing) {
             DailyBriefingView()
+        }
+        .sheet(isPresented: $showingAddTask) {
+            AddEditTaskView()
         }
     }
 
@@ -77,12 +85,47 @@ struct ContentView: View {
         .padding(.top, 8)
         .padding(.trailing, 16)
     }
+
+    // MARK: - Add Task FAB
+
+    private var addButton: some View {
+        Button {
+            showingAddTask = true
+        } label: {
+            Image(systemName: "plus")
+                .font(.title2.bold())
+                .foregroundStyle(.white)
+                .frame(width: 56, height: 56)
+                .background(Color.themePrimary)
+                .clipShape(Circle())
+                .shadow(color: Color.themePrimary.opacity(0.3), radius: 8, x: 0, y: 4)
+        }
+        .padding(.trailing, 20)
+        .padding(.bottom, 80)
+    }
 }
 
 // MARK: - DailyBriefingView
 
 struct DailyBriefingView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(TaskStore.self) private var taskStore
+
+    private var todayTasks: [TaskItem] {
+        let today = Date()
+        return taskStore.tasks.filter { task in
+            guard let dueDate = task.dueDate else { return false }
+            return Calendar.current.isDate(dueDate, inSameDayAs: today) && task.status != .completed && task.status != .cancelled
+        }
+    }
+
+    private var overdueTasks: [TaskItem] {
+        taskStore.getOverdueTasks()
+    }
+
+    private var highPriorityTasks: [TaskItem] {
+        todayTasks.filter { $0.priority == .high || $0.priority == .urgent }
+    }
 
     var body: some View {
         NavigationStack {
@@ -92,15 +135,52 @@ struct DailyBriefingView: View {
                         .font(.largeTitle.bold())
 
                     briefingSection(title: "待办任务", icon: "checklist", color: .blue) {
-                        Text("您今天有 3 项待办任务")
+                        if todayTasks.isEmpty {
+                            Text("暂无待办任务")
+                        } else {
+                            Text("您今天有 \(todayTasks.count) 项待办任务")
+                            ForEach(todayTasks.prefix(5)) { task in
+                                HStack {
+                                    Circle().fill(task.priority.color).frame(width: 8, height: 8)
+                                    Text(task.title).font(.subheadline)
+                                    Spacer()
+                                }
+                            }
+                            if todayTasks.count > 5 {
+                                Text("还有 \(todayTasks.count - 5) 项...")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
                     }
 
                     briefingSection(title: "逾期提醒", icon: "exclamationmark.triangle", color: .red) {
-                        Text("有 1 项任务已逾期")
+                        if overdueTasks.isEmpty {
+                            Text("没有逾期任务")
+                        } else {
+                            Text("有 \(overdueTasks.count) 项任务已逾期")
+                            ForEach(overdueTasks.prefix(3)) { task in
+                                HStack {
+                                    Circle().fill(.red).frame(width: 8, height: 8)
+                                    Text(task.title).font(.subheadline)
+                                    Spacer()
+                                }
+                            }
+                        }
                     }
 
                     briefingSection(title: "今日专注", icon: "brain.head.profile", color: .purple) {
-                        Text("建议优先处理高优先级任务")
+                        if highPriorityTasks.isEmpty {
+                            Text("今天没有高优先级任务，合理安排时间即可")
+                        } else {
+                            Text("建议优先处理 \(highPriorityTasks.count) 项高优先级任务")
+                            ForEach(highPriorityTasks.prefix(3)) { task in
+                                HStack {
+                                    Circle().fill(task.priority.color).frame(width: 8, height: 8)
+                                    Text(task.title).font(.subheadline)
+                                    Spacer()
+                                }
+                            }
+                        }
                     }
                 }
                 .padding()
@@ -142,4 +222,5 @@ struct DailyBriefingView: View {
 
 #Preview {
     ContentView()
+        .environment(TaskStore.shared)
 }

@@ -30,6 +30,13 @@ final class DateFormatterCache {
         return formatter
     }()
 
+    let fullDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年M月d日 EEEE"
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter
+    }()
+
     let fullDateTimeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -52,7 +59,7 @@ final class DateFormatterCache {
 
     /// 格式样式
     enum FormatStyle {
-        case full, medium, short, time
+        case full, fullDate, medium, short, time
     }
 
     /// 格式化日期
@@ -60,6 +67,8 @@ final class DateFormatterCache {
         switch style {
         case .full:
             return fullDateTimeFormatter.string(from: date)
+        case .fullDate:
+            return fullDateFormatter.string(from: date)
         case .medium:
             return mediumDateFormatter.string(from: date)
         case .short, .time:
