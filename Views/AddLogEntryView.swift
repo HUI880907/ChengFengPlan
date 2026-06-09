@@ -8,7 +8,7 @@ import SwiftUI
 struct AddLogEntryView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var content = ""
-    @State private var selectedType: LogType = .progress
+    @State private var selectedType: LogEntry.LogType = .progress
     @FocusState private var isContentFocused: Bool
 
     var body: some View {
@@ -17,7 +17,7 @@ struct AddLogEntryView: View {
                 // MARK: 日志类型
                 Section("日志类型") {
                     Picker("类型", selection: $selectedType) {
-                        ForEach(LogType.allCases, id: \.self) { type in
+                        ForEach(LogEntry.LogType.allCases, id: \.self) { type in
                             HStack {
                                 Image(systemName: type.icon)
                                     .foregroundStyle(type.color)

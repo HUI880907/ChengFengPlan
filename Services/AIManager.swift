@@ -212,7 +212,7 @@ final class AIManager {
     private func loadAPIKeys() {
         var keys: [AIProvider: String] = [:]
         for provider in AIProvider.allCases {
-            if let key = SecureStore.shared.loadString(key: "ai_key_\(provider.rawValue)") {
+            if let key = SecureStore.shared.loadString(key: "ai_api_key_\(provider.rawValue)") {
                 keys[provider] = key
             }
         }

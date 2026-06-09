@@ -58,15 +58,16 @@ struct KanbanBoardView: View {
 
     private func moveTask(_ task: TaskItem, to column: KanbanColumn) {
         withAnimation {
+            var updatedTask = task
             switch column {
             case .todo:
-                task.markAsPending()
+                updatedTask.markAsPending()
             case .inProgress:
-                task.markAsInProgress()
+                updatedTask.markAsInProgress()
             case .done:
-                task.markAsCompleted()
+                updatedTask.markAsCompleted()
             }
-            taskStore.updateTask(task)
+            taskStore.updateTask(updatedTask)
         }
     }
 }
