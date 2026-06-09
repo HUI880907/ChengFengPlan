@@ -7,6 +7,7 @@ import ZIPFoundation
 // MARK: - FileSyncManager
 
 /// 文件同步与备份管理器
+@MainActor
 @Observable
 final class FileSyncManager {
 

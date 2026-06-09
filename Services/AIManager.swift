@@ -88,7 +88,7 @@ final class AIManager {
             AIManager.shared.lastError = nil
         }
 
-        let response = await service.chat(prompt: prompt, systemPrompt: getSystemPrompt())
+        let response = await service.chat(prompt: prompt, systemPrompt: await MainActor.run { getSystemPrompt() })
 
         await MainActor.run {
             AIManager.shared.isLoading = false
@@ -110,7 +110,7 @@ final class AIManager {
         标题：\(task.title)
         描述：\(task.description)
         优先级：\(task.priority.displayName)
-        截止日期：\(task.dueDate != nil ? formatDate(task.dueDate!) : "无")
+        截止日期：\(task.dueDate != nil ? AIManager.formatDate(task.dueDate!) : "无")
 
         请提供：
         1. 任务拆解建议
@@ -205,7 +205,7 @@ final class AIManager {
 
     private func saveAPIKeys() {
         for (provider, key) in apiKeys {
-            SecureStore.shared.saveString(key: "ai_key_\(provider.rawValue)", value: key)
+            SecureStore.shared.saveString(key: "ai_api_key_\(provider.rawValue)", value: key)
         }
     }
 
@@ -218,13 +218,13 @@ final class AIManager {
         }
         apiKeys = keys
     }
+
+    private nonisolated static func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
 }
 
 // MARK: - Helpers
-
-private nonisolated func formatDate(_ date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .medium
-    formatter.timeStyle = .short
-    return formatter.string(from: date)
-}

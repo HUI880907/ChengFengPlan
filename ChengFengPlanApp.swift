@@ -18,8 +18,10 @@ struct ChengFengPlanApp: App {
         // 配置全局外观
         configureAppearance()
         
-        // 请求通知权限
-        NotificationScheduler.shared.requestAuthorization()
+        // 请求通知权限（在 Task 中异步调用，不阻塞 init）
+        Task {
+            await NotificationScheduler.shared.requestAuthorization()
+        }
         
         // 注册全局错误处理
         setupErrorHandling()

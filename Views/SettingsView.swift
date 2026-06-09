@@ -53,7 +53,7 @@ struct SettingsView: View {
 
                     SecureField("API Key", text: $apiKey)
                         .onChange(of: apiKey) { _, newValue in
-                            SecureStore.shared.saveString(key: "ai_api_key", value: newValue)
+                            SecureStore.shared.saveString(key: "ai_api_key_\(aiProvider.rawValue)", value: newValue)
                         }
 
                     Picker("模型", selection: $selectedModel) {

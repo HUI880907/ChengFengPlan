@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - SortOption
 
@@ -122,6 +123,24 @@ struct LogEntry: Identifiable, Codable, Equatable {
             case .milestone: return "里程碑"
             }
         }
+
+        var icon: String {
+            switch self {
+            case .note: return "note.text"
+            case .progress: return "chart.line.uptrend.xyaxis"
+            case .issue: return "exclamationmark.triangle"
+            case .milestone: return "flag"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .note: return .blue
+            case .progress: return .green
+            case .issue: return .red
+            case .milestone: return .orange
+            }
+        }
     }
 
     let id: UUID
@@ -172,7 +191,7 @@ struct RecurringRule: Codable, Equatable {
 // MARK: - TaskItem
 
 @Observable
-final class TaskItem: Identifiable, Codable, Equatable {
+final class TaskItem: Identifiable, Codable, Equatable, Hashable {
     let id: UUID
     var title: String
     var description: String

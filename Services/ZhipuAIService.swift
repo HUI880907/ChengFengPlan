@@ -303,12 +303,12 @@ final class ZeroOneAIService: BaseAIService {
 // MARK: - CustomAIService
 
 final class CustomAIService: BaseAIService {
+    private var modelName: String
+
     init(baseURL: String, apiKey: String, modelName: String) {
         self.modelName = modelName
         super.init(provider: .custom, baseURL: baseURL, apiKey: apiKey)
     }
-
-    private let modelName: String
 
     override func defaultModelName() -> String {
         return modelName

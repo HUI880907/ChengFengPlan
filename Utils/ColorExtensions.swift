@@ -62,7 +62,9 @@ extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
+        if let parsed = UInt64(hex, radix: 16) {
+            int = parsed
+        }
         let a, r, g, b: UInt64
         switch hex.count {
         case 3: // RGB (12-bit)

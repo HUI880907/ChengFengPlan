@@ -17,6 +17,7 @@ struct AddEditTaskView: View {
     @State private var dueDate = Date()
     @State private var hasDueDate = false
     @State private var tags: [UUID] = []
+    @State private var tagNames: [String] = []
     @State private var newTag = ""
     @State private var repeatRule: RecurrenceRule = .none
     @State private var subtasks: [Subtask] = []
@@ -92,12 +93,12 @@ struct AddEditTaskView: View {
                     }
 
                     FlowLayout(spacing: 8) {
-                        ForEach(tags, id: \.self) { tag in
+                        ForEach(tagNames, id: \.self) { tagName in
                             HStack(spacing: 4) {
-                                Text(tag)
+                                Text(tagName)
                                     .font(.caption)
                                 Button {
-                                    removeTag(tag)
+                                    removeTag(tagName)
                                 } label: {
                                     Image(systemName: "xmark")
                                         .font(.caption2)
@@ -189,13 +190,25 @@ struct AddEditTaskView: View {
 
     private func addTag() {
         let trimmed = newTag.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty, !tags.contains(trimmed) else { return }
-        tags.append(trimmed)
+        guard !trimmed.isEmpty, !tagNames.contains(trimmed) else { return }
+        tagNames.append(trimmed)
+        // 查找或创建对应的 TaskTag，获取 UUID
+        if let existingTag = taskStore.tags.first(where: { $0.name == trimmed }) {
+            tags.append(existingTag.id)
+        } else {
+            let newTagItem = TaskTag(name: trimmed, color: .blue)
+            taskStore.addTag(newTagItem)
+            tags.append(newTagItem.id)
+        }
         newTag = ""
     }
 
-    private func removeTag(_ tag: String) {
-        tags.removeAll { $0 == tag }
+    private func removeTag(_ tagName: String) {
+        tagNames.removeAll { $0 == tagName }
+        // 同步移除对应的 UUID
+        if let existingTag = taskStore.tags.first(where: { $0.name == tagName }) {
+            tags.removeAll { $0 == existingTag.id }
+        }
     }
 
     private func addSubtask() {
@@ -288,6 +301,20 @@ struct AIAssistView: View {
             isLoading = false
             dismiss()
         }
+    }
+}
+
+// MARK: - Subtask
+
+struct Subtask: Identifiable {
+    let id: UUID
+    var title: String
+    var isCompleted: Bool
+
+    init(id: UUID = UUID(), title: String, isCompleted: Bool = false) {
+        self.id = id
+        self.title = title
+        self.isCompleted = isCompleted
     }
 }
 
