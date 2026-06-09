@@ -39,7 +39,18 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
-            2>&1 | tee build.log
+            2>&1 | tee build.log || true
+          
+          # 输出错误摘要到步骤摘要
+          echo "## Build Errors" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E "error:" build.log | head -30 >> $GITHUB_STEP_SUMMARY || echo "No error lines found" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          
+          # 如果有编译错误则失败
+          if grep -q "error:" build.log; then
+            exit 1
+          fi
 
       - name: 上传构建日志
         if: failure()
