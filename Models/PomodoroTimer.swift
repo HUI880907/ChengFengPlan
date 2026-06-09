@@ -70,7 +70,7 @@ final class PomodoroManager {
     var sessions: [PomodoroSession] = []
     var defaultDuration: TimeInterval = 25 * 60 // 25分钟
 
-    private var timerCancellable: AnyCancellable?
+    private nonisolated(unsafe) var timerCancellable: AnyCancellable?
     private let sessionsKey = "com.chengfengplan.pomodorosessions"
 
     var currentRemainingTime: TimeInterval {

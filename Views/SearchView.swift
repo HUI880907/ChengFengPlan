@@ -36,7 +36,7 @@ struct SearchView: View {
                 if searchText.isEmpty {
                     searchHistorySection
                 } else {
-                    searchResultsSection
+                    searchResultsList
                 }
             }
             .navigationTitle("搜索")
@@ -139,9 +139,10 @@ struct SearchView: View {
 
     // MARK: - Search Results Section
 
-    private var searchResultsSection: some View {
+    @ViewBuilder
+    private var searchResultsList: some View {
+        let results = taskStore.searchTasks(query: searchText)
         List {
-            let results = taskStore.searchTasks(query: searchText)
             if !results.isEmpty {
                 Section("任务") {
                     ForEach(results) { task in

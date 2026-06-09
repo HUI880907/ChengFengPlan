@@ -50,7 +50,7 @@ final class TrashManager {
 
     var entries: [TrashEntry] = []
 
-    private var cleanupTimer: Timer?
+    private nonisolated(unsafe) var cleanupTimer: Timer?
     private let trashRetentionDays: Int = 30
     private let trashKey = "com.chengfengplan.trash"
 
