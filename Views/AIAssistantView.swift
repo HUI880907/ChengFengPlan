@@ -5,6 +5,7 @@ import SwiftUI
 
 // MARK: - AIAssistantView
 
+@MainActor
 struct AIAssistantView: View {
     @Environment(TaskStore.self) private var taskStore
     @State private var messages: [ChatMessage] = [

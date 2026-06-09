@@ -107,6 +107,7 @@ struct ContentView: View {
 
 // MARK: - DailyBriefingView
 
+@MainActor
 struct DailyBriefingView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(TaskStore.self) private var taskStore

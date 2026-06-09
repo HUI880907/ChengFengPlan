@@ -6,6 +6,7 @@ import Charts
 
 // MARK: - StatisticsView
 
+@MainActor
 struct StatisticsView: View {
     @Environment(TaskStore.self) private var taskStore
     @State private var timeRange: TimeRange = .week

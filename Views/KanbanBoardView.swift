@@ -164,6 +164,7 @@ struct KanbanColumnView: View {
 
 // MARK: - KanbanCardView
 
+@MainActor
 struct KanbanCardView: View {
     @Bindable var task: TaskItem
     let options: CardDisplayOptions
@@ -211,7 +212,7 @@ struct KanbanCardView: View {
                         Image(systemName: task.isOverdue ? "calendar.badge.exclamationmark" : "calendar")
                             .font(.caption2)
                             .foregroundStyle(task.isOverdue ? .red : .secondary)
-                        Text(DateFormatterCache.shared.format(dueDate, style: .date))
+                        Text(DateFormatterCache.shared.format(dueDate, style: .medium))
                             .font(.caption2)
                             .foregroundStyle(task.isOverdue ? .red : .secondary)
                     }

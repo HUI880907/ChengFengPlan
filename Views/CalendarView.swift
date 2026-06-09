@@ -5,6 +5,7 @@ import SwiftUI
 
 // MARK: - CalendarView
 
+@MainActor
 struct CalendarView: View {
     @Environment(TaskStore.self) private var taskStore
     @State private var selectedDate = Date()

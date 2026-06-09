@@ -121,7 +121,7 @@ struct SettingsView: View {
                     }
 
                     LabeledContent("状态", value: apiKey.isEmpty ? "未配置" : "已配置")
-                        .foregroundStyle(apiKey.isEmpty ? .secondary : .green)
+                        .foregroundStyle(apiKey.isEmpty ? Color.secondary : Color.green)
                 } header: {
                     Text("AI 设置")
                 } footer: {
