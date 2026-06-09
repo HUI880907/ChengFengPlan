@@ -94,7 +94,7 @@ struct AIAssistantView: View {
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(inputText.isEmpty ? .secondary : .themePrimary)
+                    .foregroundStyle(inputText.isEmpty ? .secondary : Color.themePrimary)
             }
             .disabled(inputText.isEmpty || isLoading)
         }
@@ -194,7 +194,7 @@ struct QuickActionButton: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(Color.themePrimary.opacity(0.1))
-            .foregroundStyle(.themePrimary)
+            .foregroundStyle(Color.themePrimary)
             .clipShape(Capsule())
         }
     }

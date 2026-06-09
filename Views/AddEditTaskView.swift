@@ -9,7 +9,7 @@ import PhotosUI
 struct AddEditTaskView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(TaskStore.self) private var taskStore
-    @Bindable var task: TaskItem?
+    var task: TaskItem?
 
     @State private var title = ""
     @State private var description = ""
@@ -85,30 +85,45 @@ struct AddEditTaskView: View {
                     HStack {
                         TextField("添加标签", text: $newTag)
                         Button {
-                            addTag()
+                            let trimmed = newTag.trimmingCharacters(in: .whitespaces)
+                            guard !trimmed.isEmpty, !tagNames.contains(trimmed) else { return }
+                            tagNames.append(trimmed)
+                            if let existingTag = taskStore.tags.first(where: { $0.name == trimmed }) {
+                                tags.append(existingTag.id)
+                            } else {
+                                let newTagItem = TaskTag(name: trimmed, color: .blue)
+                                taskStore.addTag(newTagItem)
+                                tags.append(newTagItem.id)
+                            }
+                            newTag = ""
                         } label: {
                             Image(systemName: "plus.circle.fill")
                         }
                         .disabled(newTag.isEmpty)
                     }
 
-                    FlowLayout(spacing: 8) {
-                        ForEach(tagNames, id: \.self) { tagName in
-                            HStack(spacing: 4) {
-                                Text(tagName)
-                                    .font(.caption)
-                                Button {
-                                    removeTag(tagName)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(tagNames, id: \.self) { tagName in
+                                HStack(spacing: 4) {
+                                    Text(tagName)
+                                        .font(.caption)
+                                    Button {
+                                    tagNames.removeAll { $0 == tagName }
+                                    if let existingTag = taskStore.tags.first(where: { $0.name == tagName }) {
+                                        tags.removeAll { $0 == existingTag.id }
+                                    }
                                 } label: {
                                     Image(systemName: "xmark")
                                         .font(.caption2)
                                 }
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.themeSecondary.opacity(0.2))
+                                .foregroundStyle(Color.themeSecondary)
+                                .clipShape(Capsule())
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.themeSecondary.opacity(0.2))
-                            .foregroundStyle(.themeSecondary)
-                            .clipShape(Capsule())
                         }
                     }
                 }
@@ -160,7 +175,7 @@ struct AddEditTaskView: View {
                         showingAIAssist = true
                     } label: {
                         Label("AI 辅助输入", systemImage: "sparkles")
-                            .foregroundStyle(.themePrimary)
+                            .foregroundStyle(Color.themePrimary)
                     }
                 }
             }
@@ -174,7 +189,24 @@ struct AddEditTaskView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("保存") {
-                        saveTask()
+                        if let existingTask = task {
+                            existingTask.title = title
+                            existingTask.description = description
+                            existingTask.priority = priority
+                            existingTask.dueDate = hasDueDate ? dueDate : nil
+                            existingTask.tags = tags
+                            taskStore.updateTask(existingTask)
+                        } else {
+                            let newTask = TaskItem(
+                                title: title,
+                                description: description,
+                                priority: priority,
+                                dueDate: hasDueDate ? dueDate : nil,
+                                tags: tags
+                            )
+                            taskStore.addTask(newTask)
+                        }
+                        dismiss()
                     }
                     .disabled(title.isEmpty)
                 }
@@ -188,29 +220,6 @@ struct AddEditTaskView: View {
 
     // MARK: - Methods
 
-    private func addTag() {
-        let trimmed = newTag.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty, !tagNames.contains(trimmed) else { return }
-        tagNames.append(trimmed)
-        // 查找或创建对应的 TaskTag，获取 UUID
-        if let existingTag = taskStore.tags.first(where: { $0.name == trimmed }) {
-            tags.append(existingTag.id)
-        } else {
-            let newTagItem = TaskTag(name: trimmed, color: .blue)
-            taskStore.addTag(newTagItem)
-            tags.append(newTagItem.id)
-        }
-        newTag = ""
-    }
-
-    private func removeTag(_ tagName: String) {
-        tagNames.removeAll { $0 == tagName }
-        // 同步移除对应的 UUID
-        if let existingTag = taskStore.tags.first(where: { $0.name == tagName }) {
-            tags.removeAll { $0 == existingTag.id }
-        }
-    }
-
     private func addSubtask() {
         let trimmed = newSubtask.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
@@ -220,29 +229,6 @@ struct AddEditTaskView: View {
 
     private func removeSubtask(_ subtask: Subtask) {
         subtasks.removeAll { $0.id == subtask.id }
-    }
-
-    private func saveTask() {
-        if let existingTask = task {
-            // 编辑模式：更新现有任务
-            existingTask.title = title
-            existingTask.description = description
-            existingTask.priority = priority
-            existingTask.dueDate = hasDueDate ? dueDate : nil
-            existingTask.tags = tags
-            taskStore.updateTask(existingTask)
-        } else {
-            // 新建模式：创建新任务
-            let newTask = TaskItem(
-                title: title,
-                description: description,
-                priority: priority,
-                dueDate: hasDueDate ? dueDate : nil,
-                tags: tags
-            )
-            taskStore.addTask(newTask)
-        }
-        dismiss()
     }
 }
 

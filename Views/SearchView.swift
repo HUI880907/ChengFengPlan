@@ -21,11 +21,6 @@ struct SearchView: View {
     @State private var searchHistory: [String] = ["项目", "紧急", "周报"]
     @State private var showingAdvancedFilter = false
 
-    private var filteredResults: [TaskItem] {
-        guard !searchText.isEmpty else { return [] }
-        return taskStore.searchTasks(query: searchText)
-    }
-
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -76,7 +71,7 @@ struct SearchView: View {
             } label: {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .font(.title3)
-                    .foregroundStyle(.themePrimary)
+                    .foregroundStyle(Color.themePrimary)
             }
         }
         .padding()
@@ -135,7 +130,7 @@ struct SearchView: View {
                         searchHistory.removeAll()
                     }
                     .font(.caption)
-                    .foregroundStyle(.themePrimary)
+                    .foregroundStyle(Color.themePrimary)
                 }
             }
         }
@@ -146,9 +141,10 @@ struct SearchView: View {
 
     private var searchResultsSection: some View {
         List {
-            if !filteredResults.isEmpty {
+            let results = taskStore.searchTasks(query: searchText)
+            if !results.isEmpty {
                 Section("任务") {
-                    ForEach(filteredResults) { task in
+                    ForEach(results) { task in
                         HStack {
                             Circle()
                                 .fill(task.priority.color)

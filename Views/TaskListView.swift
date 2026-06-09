@@ -8,15 +8,13 @@ import SwiftUI
 struct TaskListView: View {
     @Environment(TaskStore.self) private var taskStore
     @State private var showingAddTask = false
-
-    var filteredTasks: [TaskItem] {
-        taskStore.filteredAndSortedTasks()
-    }
+    @State private var searchText = ""
+    @State private var sortOption: SortOption = .dueDate
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(filteredTasks) { task in
+                ForEach(taskStore.filteredAndSortedTasks()) { task in
                     TaskRowView(task: task)
                         .swipeActions(edge: .leading) {
                             Button {
@@ -41,14 +39,20 @@ struct TaskListView: View {
             }
             .listStyle(.plain)
             .navigationTitle("任务列表")
-            .searchable(text: $taskStore.searchText, prompt: "搜索任务")
+            .searchable(text: $searchText, prompt: "搜索任务")
+            .onChange(of: searchText) { _, newValue in
+                taskStore.searchText = newValue
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Picker("排序", selection: $taskStore.sortOption) {
+                        Picker("排序", selection: $sortOption) {
                             ForEach(SortOption.allCases, id: \.self) { option in
                                 Text(option.rawValue).tag(option)
                             }
+                        }
+                        .onChange(of: sortOption) { _, newValue in
+                            taskStore.sortOption = newValue
                         }
                     } label: {
                         Image(systemName: "arrow.up.arrow.down")

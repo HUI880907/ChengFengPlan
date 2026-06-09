@@ -104,7 +104,8 @@ final class PomodoroManager {
     }
 
     deinit {
-        timerCancellable?.cancel()
+        let cancellable = timerCancellable
+        cancellable?.cancel()
     }
 
     // MARK: - Persistence

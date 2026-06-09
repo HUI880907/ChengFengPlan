@@ -55,7 +55,7 @@ struct TaskDetailView: View {
             AddEditTaskView(task: task)
         }
         .sheet(isPresented: $showingAddLog) {
-            AddLogEntryView(task: task)
+            AddLogEntryView()
         }
         .alert("确认删除", isPresented: $showingDeleteConfirmation) {
             Button("取消", role: .cancel) { }
@@ -116,7 +116,7 @@ struct TaskDetailView: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(Color.themeSecondary.opacity(0.2))
-                            .foregroundStyle(.themeSecondary)
+                            .foregroundStyle(Color.themeSecondary)
                             .clipShape(Capsule())
                     }
                 }
@@ -147,28 +147,7 @@ struct TaskDetailView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
-                VStack(spacing: 8) {
-                    ForEach(task.subTaskIds, id: \.self) { subTaskId in
-                        if let subTask = taskStore.tasks.first(where: { $0.id == subTaskId }) {
-                            HStack {
-                                Button {
-                                    withAnimation {
-                                        taskStore.toggleTaskCompletion(id: subTask.id)
-                                    }
-                                } label: {
-                                    Image(systemName: subTask.isCompleted ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(subTask.isCompleted ? .green : .secondary)
-                                }
-
-                                Text(subTask.title)
-                                    .strikethrough(subTask.isCompleted)
-                                    .foregroundStyle(subTask.isCompleted ? .secondary : .primary)
-
-                                Spacer()
-                            }
-                        }
-                    }
-                }
+                SubtaskListView(subTaskIds: task.subTaskIds)
             }
         }
     }
@@ -208,7 +187,7 @@ struct TaskDetailView: View {
                     showingAddLog = true
                 } label: {
                     Image(systemName: "plus.circle")
-                        .foregroundStyle(.themePrimary)
+                        .foregroundStyle(Color.themePrimary)
                 }
             }
 
@@ -320,6 +299,39 @@ struct FlowLayout: Layout {
             }
 
             self.size = CGSize(width: maxWidth, height: y + rowHeight)
+        }
+    }
+}
+
+// MARK: - SubtaskListView
+
+/// 独立的子任务列表视图，确保在 View body 上下文中访问 MainActor 隔离的 taskStore
+struct SubtaskListView: View {
+    let subTaskIds: [UUID]
+    @Environment(TaskStore.self) private var taskStore
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ForEach(subTaskIds, id: \.self) { subTaskId in
+                if let subTask = taskStore.tasks.first(where: { $0.id == subTaskId }) {
+                    HStack {
+                        Button {
+                            withAnimation {
+                                taskStore.toggleTaskCompletion(id: subTask.id)
+                            }
+                        } label: {
+                            Image(systemName: subTask.isCompleted ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(subTask.isCompleted ? .green : .secondary)
+                        }
+
+                        Text(subTask.title)
+                            .strikethrough(subTask.isCompleted)
+                            .foregroundStyle(subTask.isCompleted ? .secondary : .primary)
+
+                        Spacer()
+                    }
+                }
+            }
         }
     }
 }

@@ -39,9 +39,20 @@ struct KanbanBoardView: View {
                     ForEach(KanbanColumn.allCases, id: \.self) { column in
                         KanbanColumnView(
                             column: column,
-                            tasks: tasks(for: column),
+                            tasks: taskStore.tasks.filter { $0.status == column.taskStatus },
                             onDrop: { task in
-                                moveTask(task, to: column)
+                                withAnimation {
+                                    var updatedTask = task
+                                    switch column {
+                                    case .todo:
+                                        updatedTask.markAsPending()
+                                    case .inProgress:
+                                        updatedTask.markAsInProgress()
+                                    case .done:
+                                        updatedTask.markAsCompleted()
+                                    }
+                                    taskStore.updateTask(updatedTask)
+                                }
                             }
                         )
                     }
@@ -49,25 +60,6 @@ struct KanbanBoardView: View {
                 .padding()
             }
             .navigationTitle("看板")
-        }
-    }
-
-    private func tasks(for column: KanbanColumn) -> [TaskItem] {
-        taskStore.tasks.filter { $0.status == column.taskStatus }
-    }
-
-    private func moveTask(_ task: TaskItem, to column: KanbanColumn) {
-        withAnimation {
-            var updatedTask = task
-            switch column {
-            case .todo:
-                updatedTask.markAsPending()
-            case .inProgress:
-                updatedTask.markAsInProgress()
-            case .done:
-                updatedTask.markAsCompleted()
-            }
-            taskStore.updateTask(updatedTask)
         }
     }
 }

@@ -70,7 +70,8 @@ final class TrashManager {
     }
 
     deinit {
-        stopCleanupTimer()
+        cleanupTimer?.invalidate()
+        cleanupTimer = nil
     }
 
     // MARK: - Persistence

@@ -41,7 +41,7 @@ struct ChengFengPlanApp: App {
                     Text(errorMessage)
                 }
                 .onOpenURL { url in
-                    URLSchemeHandler.shared.handle(url)
+                    URLSchemeHandler.shared.handle(url: url)
                 }
         }
     }

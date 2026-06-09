@@ -153,7 +153,7 @@ struct ExportDataView: View {
             VStack(spacing: 20) {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 60))
-                    .foregroundStyle(.themePrimary)
+                    .foregroundStyle(Color.themePrimary)
 
                 Text("导出数据")
                     .font(.title2.bold())
@@ -203,7 +203,7 @@ struct ImportDataView: View {
             VStack(spacing: 20) {
                 Image(systemName: "square.and.arrow.down")
                     .font(.system(size: 60))
-                    .foregroundStyle(.themeSecondary)
+                    .foregroundStyle(Color.themeSecondary)
 
                 Text("导入数据")
                     .font(.title2.bold())
