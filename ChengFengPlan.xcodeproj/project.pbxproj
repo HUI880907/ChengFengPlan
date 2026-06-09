@@ -7,79 +7,81 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A1000001 /* ChengFengPlanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000 /* ChengFengPlanApp.swift */; };
-		A1000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002 /* ContentView.swift */; };
-		A1000005 /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004 /* TaskListView.swift */; };
-		A1000007 /* KanbanBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006 /* KanbanBoardView.swift */; };
-		A1000009 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000008 /* CalendarView.swift */; };
-		A100000B /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000A /* StatisticsView.swift */; };
-		A100000D /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000C /* TaskDetailView.swift */; };
-		A100000F /* AddEditTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000E /* AddEditTaskView.swift */; };
-		A1000011 /* AIAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010 /* AIAssistantView.swift */; };
-		A1000013 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012 /* SearchView.swift */; };
-		A1000015 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014 /* SettingsView.swift */; };
-		A1000017 /* AddLogEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016 /* AddLogEntryView.swift */; };
-		A1000019 /* TaskItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018 /* TaskItem.swift */; };
-		A100001B /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001A /* TaskStore.swift */; };
-		A100001D /* AIServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001C /* AIServiceProtocol.swift */; };
-		A100001F /* AIManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100001E /* AIManager.swift */; };
-		A1000021 /* ZhipuAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000020 /* ZhipuAIService.swift */; };
-		A1000023 /* VisionOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000022 /* VisionOCRService.swift */; };
-		A1000025 /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000024 /* SecureStore.swift */; };
-		A1000027 /* FileSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000026 /* FileSyncManager.swift */; };
-		A1000029 /* TaskStoreKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000028 /* TaskStoreKey.swift */; };
-		A100002B /* DateRangeCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002A /* DateRangeCalculator.swift */; };
-		A100002D /* ColorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100002C /* ColorExtensions.swift */; };
-		A1000034 /* TaskTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000034 /* TaskTemplate.swift */; };
-		A1000036 /* TrashManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000035 /* TrashManager.swift */; };
-		A1000038 /* PomodoroTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000037 /* PomodoroTimer.swift */; };
-		A100003A /* MoodTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000039 /* MoodTracker.swift */; };
-		A100003C /* TaskShareManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003B /* TaskShareManager.swift */; };
-		A100003E /* RecurringTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003D /* RecurringTaskService.swift */; };
-		A1000040 /* DailyBriefingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100003F /* DailyBriefingService.swift */; };
-		A1000042 /* NotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000041 /* NotificationScheduler.swift */; };
-		A1000044 /* URLSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000043 /* URLSchemeHandler.swift */; };
+		B1000001 /* ChengFengPlanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000001 /* ChengFengPlanApp.swift */; };
+		B1000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000002 /* ContentView.swift */; };
+		B1000003 /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000003 /* TaskListView.swift */; };
+		B1000004 /* KanbanBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000004 /* KanbanBoardView.swift */; };
+		B1000005 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000005 /* CalendarView.swift */; };
+		B1000006 /* StatisticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000006 /* StatisticsView.swift */; };
+		B1000007 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000007 /* TaskDetailView.swift */; };
+		B1000008 /* AddEditTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000008 /* AddEditTaskView.swift */; };
+		B1000009 /* AIAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000009 /* AIAssistantView.swift */; };
+		B100000A /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000A /* SearchView.swift */; };
+		B100000B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000B /* SettingsView.swift */; };
+		B100000C /* AddLogEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000C /* AddLogEntryView.swift */; };
+		B100000D /* TaskItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000D /* TaskItem.swift */; };
+		B100000E /* TaskTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000E /* TaskTemplate.swift */; };
+		B100000F /* TrashManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000F /* TrashManager.swift */; };
+		B1000010 /* PomodoroTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000010 /* PomodoroTimer.swift */; };
+		B1000011 /* MoodTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000011 /* MoodTracker.swift */; };
+		B1000012 /* TaskShareManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000012 /* TaskShareManager.swift */; };
+		B1000013 /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000013 /* TaskStore.swift */; };
+		B1000014 /* AIServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000014 /* AIServiceProtocol.swift */; };
+		B1000015 /* AIManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000015 /* AIManager.swift */; };
+		B1000016 /* ZhipuAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000016 /* ZhipuAIService.swift */; };
+		B1000017 /* VisionOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000017 /* VisionOCRService.swift */; };
+		B1000018 /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000018 /* SecureStore.swift */; };
+		B1000019 /* FileSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000019 /* FileSyncManager.swift */; };
+		B100001A /* RecurringTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001A /* RecurringTaskService.swift */; };
+		B100001B /* DailyBriefingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001B /* DailyBriefingService.swift */; };
+		B100001C /* NotificationScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001C /* NotificationScheduler.swift */; };
+		B100001D /* URLSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001D /* URLSchemeHandler.swift */; };
+		B100001E /* TaskStoreKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001E /* TaskStoreKey.swift */; };
+		B100001F /* DateRangeCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200001F /* DateRangeCalculator.swift */; };
+		B1000020 /* DateFormatterCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000020 /* DateFormatterCache.swift */; };
+		B1000021 /* ColorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000021 /* ColorExtensions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A0FFFFFF /* ChengFengPlan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChengFengPlan.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A1000000 /* ChengFengPlanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChengFengPlanApp.swift; sourceTree = "<group>"; };
-		A1000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A1000004 /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
-		A1000006 /* KanbanBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanBoardView.swift; sourceTree = "<group>"; };
-		A1000008 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
-		A100000A /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
-		A100000C /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
-		A100000E /* AddEditTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditTaskView.swift; sourceTree = "<group>"; };
-		A1000010 /* AIAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAssistantView.swift; sourceTree = "<group>"; };
-		A1000012 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
-		A1000014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		A1000016 /* AddLogEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddLogEntryView.swift; sourceTree = "<group>"; };
-		A1000018 /* TaskItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskItem.swift; sourceTree = "<group>"; };
-		A100001A /* TaskStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStore.swift; sourceTree = "<group>"; };
-		A100001C /* AIServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceProtocol.swift; sourceTree = "<group>"; };
-		A100001E /* AIManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIManager.swift; sourceTree = "<group>"; };
-		A1000020 /* ZhipuAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZhipuAIService.swift; sourceTree = "<group>"; };
-		A1000022 /* VisionOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionOCRService.swift; sourceTree = "<group>"; };
-		A1000024 /* SecureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
-		A1000026 /* FileSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSyncManager.swift; sourceTree = "<group>"; };
-		A1000028 /* TaskStoreKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStoreKey.swift; sourceTree = "<group>"; };
-		A100002A /* DateRangeCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateRangeCalculator.swift; sourceTree = "<group>"; };
-		A100002C /* ColorExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensions.swift; sourceTree = "<group>"; };
-		A100002E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A1000034 /* TaskTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTemplate.swift; sourceTree = "<group>"; };
-		A1000035 /* TrashManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrashManager.swift; sourceTree = "<group>"; };
-		A1000037 /* PomodoroTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroTimer.swift; sourceTree = "<group>"; };
-		A1000039 /* MoodTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTracker.swift; sourceTree = "<group>"; };
-		A100003B /* TaskShareManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskShareManager.swift; sourceTree = "<group>"; };
-		A100003D /* RecurringTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringTaskService.swift; sourceTree = "<group>"; };
-		A100003F /* DailyBriefingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyBriefingService.swift; sourceTree = "<group>"; };
-		A1000041 /* NotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduler.swift; sourceTree = "<group>"; };
-		A1000043 /* URLSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSchemeHandler.swift; sourceTree = "<group>"; };
+		B2000000 /* ChengFengPlan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChengFengPlan.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B2000001 /* ChengFengPlanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChengFengPlanApp.swift; sourceTree = "<group>"; };
+		B2000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B2000003 /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
+		B2000004 /* KanbanBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanBoardView.swift; sourceTree = "<group>"; };
+		B2000005 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
+		B2000006 /* StatisticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
+		B2000007 /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
+		B2000008 /* AddEditTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditTaskView.swift; sourceTree = "<group>"; };
+		B2000009 /* AIAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAssistantView.swift; sourceTree = "<group>"; };
+		B200000A /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		B200000B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B200000C /* AddLogEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddLogEntryView.swift; sourceTree = "<group>"; };
+		B200000D /* TaskItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskItem.swift; sourceTree = "<group>"; };
+		B200000E /* TaskTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskTemplate.swift; sourceTree = "<group>"; };
+		B200000F /* TrashManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrashManager.swift; sourceTree = "<group>"; };
+		B2000010 /* PomodoroTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroTimer.swift; sourceTree = "<group>"; };
+		B2000011 /* MoodTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTracker.swift; sourceTree = "<group>"; };
+		B2000012 /* TaskShareManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskShareManager.swift; sourceTree = "<group>"; };
+		B2000013 /* TaskStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStore.swift; sourceTree = "<group>"; };
+		B2000014 /* AIServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIServiceProtocol.swift; sourceTree = "<group>"; };
+		B2000015 /* AIManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIManager.swift; sourceTree = "<group>"; };
+		B2000016 /* ZhipuAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZhipuAIService.swift; sourceTree = "<group>"; };
+		B2000017 /* VisionOCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionOCRService.swift; sourceTree = "<group>"; };
+		B2000018 /* SecureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
+		B2000019 /* FileSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSyncManager.swift; sourceTree = "<group>"; };
+		B200001A /* RecurringTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurringTaskService.swift; sourceTree = "<group>"; };
+		B200001B /* DailyBriefingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyBriefingService.swift; sourceTree = "<group>"; };
+		B200001C /* NotificationScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationScheduler.swift; sourceTree = "<group>"; };
+		B200001D /* URLSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSchemeHandler.swift; sourceTree = "<group>"; };
+		B200001E /* TaskStoreKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStoreKey.swift; sourceTree = "<group>"; };
+		B200001F /* DateRangeCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateRangeCalculator.swift; sourceTree = "<group>"; };
+		B2000020 /* DateFormatterCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatterCache.swift; sourceTree = "<group>"; };
+		B2000021 /* ColorExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensions.swift; sourceTree = "<group>"; };
+		B2000022 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A0FFFFFE /* Frameworks */ = {
+		B4000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -89,98 +91,99 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A0FFFFF6 = {
+		B3000001 /* Main Group */ = {
 			isa = PBXGroup;
 			children = (
-				A0FFFFFD /* ChengFengPlan */,
-				A1000001 /* Products */,
+				B3000002 /* ChengFengPlan */,
+				B3000003 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A1000001 /* Products */ = {
+		B3000002 /* ChengFengPlan */ = {
 			isa = PBXGroup;
 			children = (
-				A0FFFFFF /* ChengFengPlan.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		A0FFFFFD /* ChengFengPlan */ = {
-			isa = PBXGroup;
-			children = (
-				A1000000 /* ChengFengPlanApp.swift */,
-				A100002F /* Models */,
-				A1000030 /* Stores */,
-				A1000031 /* Services */,
-				A1000032 /* Views */,
-				A1000033 /* Utils */,
-				A100002E /* Info.plist */,
+				B2000001 /* ChengFengPlanApp.swift */,
+				B3000004 /* Models */,
+				B3000005 /* Stores */,
+				B3000006 /* Services */,
+				B3000007 /* Views */,
+				B3000008 /* Utils */,
+				B2000022 /* Info.plist */,
 			);
 			path = ChengFengPlan;
 			sourceTree = "<group>";
 		};
-		A100002F /* Models */ = {
+		B3000003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A1000018 /* TaskItem.swift */,
-				A1000034 /* TaskTemplate.swift */,
-				A1000035 /* TrashManager.swift */,
-				A1000037 /* PomodoroTimer.swift */,
-				A1000039 /* MoodTracker.swift */,
-				A100003B /* TaskShareManager.swift */,
+				B2000000 /* ChengFengPlan.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B3000004 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B200000D /* TaskItem.swift */,
+				B200000E /* TaskTemplate.swift */,
+				B200000F /* TrashManager.swift */,
+				B2000010 /* PomodoroTimer.swift */,
+				B2000011 /* MoodTracker.swift */,
+				B2000012 /* TaskShareManager.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		A1000030 /* Stores */ = {
+		B3000005 /* Stores */ = {
 			isa = PBXGroup;
 			children = (
-				A100001A /* TaskStore.swift */,
+				B2000013 /* TaskStore.swift */,
 			);
 			path = Stores;
 			sourceTree = "<group>";
 		};
-		A1000031 /* Services */ = {
+		B3000006 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				A100001C /* AIServiceProtocol.swift */,
-				A100001E /* AIManager.swift */,
-				A1000020 /* ZhipuAIService.swift */,
-				A1000022 /* VisionOCRService.swift */,
-				A1000024 /* SecureStore.swift */,
-				A1000026 /* FileSyncManager.swift */,
-				A100003D /* RecurringTaskService.swift */,
-				A100003F /* DailyBriefingService.swift */,
-				A1000041 /* NotificationScheduler.swift */,
-				A1000043 /* URLSchemeHandler.swift */,
+				B2000014 /* AIServiceProtocol.swift */,
+				B2000015 /* AIManager.swift */,
+				B2000016 /* ZhipuAIService.swift */,
+				B2000017 /* VisionOCRService.swift */,
+				B2000018 /* SecureStore.swift */,
+				B2000019 /* FileSyncManager.swift */,
+				B200001A /* RecurringTaskService.swift */,
+				B200001B /* DailyBriefingService.swift */,
+				B200001C /* NotificationScheduler.swift */,
+				B200001D /* URLSchemeHandler.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
 		};
-		A1000032 /* Views */ = {
+		B3000007 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				A1000002 /* ContentView.swift */,
-				A1000004 /* TaskListView.swift */,
-				A1000006 /* KanbanBoardView.swift */,
-				A1000008 /* CalendarView.swift */,
-				A100000A /* StatisticsView.swift */,
-				A100000C /* TaskDetailView.swift */,
-				A100000E /* AddEditTaskView.swift */,
-				A1000010 /* AIAssistantView.swift */,
-				A1000012 /* SearchView.swift */,
-				A1000014 /* SettingsView.swift */,
-				A1000016 /* AddLogEntryView.swift */,
+				B2000002 /* ContentView.swift */,
+				B2000003 /* TaskListView.swift */,
+				B2000004 /* KanbanBoardView.swift */,
+				B2000005 /* CalendarView.swift */,
+				B2000006 /* StatisticsView.swift */,
+				B2000007 /* TaskDetailView.swift */,
+				B2000008 /* AddEditTaskView.swift */,
+				B2000009 /* AIAssistantView.swift */,
+				B200000A /* SearchView.swift */,
+				B200000B /* SettingsView.swift */,
+				B200000C /* AddLogEntryView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
 		};
-		A1000033 /* Utils */ = {
+		B3000008 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				A1000028 /* TaskStoreKey.swift */,
-				A100002A /* DateRangeCalculator.swift */,
-				A100002C /* ColorExtensions.swift */,
+				B200001E /* TaskStoreKey.swift */,
+				B200001F /* DateRangeCalculator.swift */,
+				B2000020 /* DateFormatterCache.swift */,
+				B2000021 /* ColorExtensions.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -188,13 +191,13 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A0FFFFFE /* ChengFengPlan */ = {
+		B5000001 /* ChengFengPlan */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A1000045 /* Build configuration list for PBXNativeTarget "ChengFengPlan" */;
+			buildConfigurationList = B8000002 /* Build configuration list for PBXNativeTarget "ChengFengPlan" */;
 			buildPhases = (
-				A0FFFFFB /* Sources */,
-				A0FFFFFC /* Frameworks */,
-				A0FFFFFD /* Resources */,
+				B4000003 /* Sources */,
+				B4000001 /* Frameworks */,
+				B4000002 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -202,25 +205,25 @@
 			);
 			name = ChengFengPlan;
 			productName = ChengFengPlan;
-			productReference = A0FFFFFF /* ChengFengPlan.app */;
+			productReference = B2000000 /* ChengFengPlan.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A0FFFFF7 /* Project object */ = {
+		B6000001 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
-					A0FFFFFE = {
+					B5000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
-			buildConfigurationList = A0FFFFFA /* Build configuration list for PBXProject "ChengFengPlan" */;
+			buildConfigurationList = B8000001 /* Build configuration list for PBXProject "ChengFengPlan" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = zh_CN;
 			hasScannedForEncodings = 0;
@@ -229,18 +232,18 @@
 				Base,
 				zh_CN,
 			);
-			mainGroup = A0FFFFF6;
-			productRefGroup = A1000001 /* Products */;
+			mainGroup = B3000001 /* Main Group */;
+			productRefGroup = B3000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A0FFFFFE /* ChengFengPlan */,
+				B5000001 /* ChengFengPlan */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A0FFFFFD /* Resources */ = {
+		B4000002 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -250,49 +253,50 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A0FFFFFB /* Sources */ = {
+		B4000003 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1000001 /* ChengFengPlanApp.swift in Sources */,
-				A1000003 /* ContentView.swift in Sources */,
-				A1000005 /* TaskListView.swift in Sources */,
-				A1000007 /* KanbanBoardView.swift in Sources */,
-				A1000009 /* CalendarView.swift in Sources */,
-				A100000B /* StatisticsView.swift in Sources */,
-				A100000D /* TaskDetailView.swift in Sources */,
-				A100000F /* AddEditTaskView.swift in Sources */,
-				A1000011 /* AIAssistantView.swift in Sources */,
-				A1000013 /* SearchView.swift in Sources */,
-				A1000015 /* SettingsView.swift in Sources */,
-				A1000017 /* AddLogEntryView.swift in Sources */,
-				A1000019 /* TaskItem.swift in Sources */,
-				A100001B /* TaskStore.swift in Sources */,
-				A100001D /* AIServiceProtocol.swift in Sources */,
-				A100001F /* AIManager.swift in Sources */,
-				A1000021 /* ZhipuAIService.swift in Sources */,
-				A1000023 /* VisionOCRService.swift in Sources */,
-				A1000025 /* SecureStore.swift in Sources */,
-				A1000027 /* FileSyncManager.swift in Sources */,
-				A1000029 /* TaskStoreKey.swift in Sources */,
-				A100002B /* DateRangeCalculator.swift in Sources */,
-				A100002D /* ColorExtensions.swift in Sources */,
-				A1000034 /* TaskTemplate.swift in Sources */,
-				A1000036 /* TrashManager.swift in Sources */,
-				A1000038 /* PomodoroTimer.swift in Sources */,
-				A100003A /* MoodTracker.swift in Sources */,
-				A100003C /* TaskShareManager.swift in Sources */,
-				A100003E /* RecurringTaskService.swift in Sources */,
-				A1000040 /* DailyBriefingService.swift in Sources */,
-				A1000042 /* NotificationScheduler.swift in Sources */,
-				A1000044 /* URLSchemeHandler.swift in Sources */,
+				B1000001 /* ChengFengPlanApp.swift in Sources */,
+				B1000002 /* ContentView.swift in Sources */,
+				B1000003 /* TaskListView.swift in Sources */,
+				B1000004 /* KanbanBoardView.swift in Sources */,
+				B1000005 /* CalendarView.swift in Sources */,
+				B1000006 /* StatisticsView.swift in Sources */,
+				B1000007 /* TaskDetailView.swift in Sources */,
+				B1000008 /* AddEditTaskView.swift in Sources */,
+				B1000009 /* AIAssistantView.swift in Sources */,
+				B100000A /* SearchView.swift in Sources */,
+				B100000B /* SettingsView.swift in Sources */,
+				B100000C /* AddLogEntryView.swift in Sources */,
+				B100000D /* TaskItem.swift in Sources */,
+				B100000E /* TaskTemplate.swift in Sources */,
+				B100000F /* TrashManager.swift in Sources */,
+				B1000010 /* PomodoroTimer.swift in Sources */,
+				B1000011 /* MoodTracker.swift in Sources */,
+				B1000012 /* TaskShareManager.swift in Sources */,
+				B1000013 /* TaskStore.swift in Sources */,
+				B1000014 /* AIServiceProtocol.swift in Sources */,
+				B1000015 /* AIManager.swift in Sources */,
+				B1000016 /* ZhipuAIService.swift in Sources */,
+				B1000017 /* VisionOCRService.swift in Sources */,
+				B1000018 /* SecureStore.swift in Sources */,
+				B1000019 /* FileSyncManager.swift in Sources */,
+				B100001A /* RecurringTaskService.swift in Sources */,
+				B100001B /* DailyBriefingService.swift in Sources */,
+				B100001C /* NotificationScheduler.swift in Sources */,
+				B100001D /* URLSchemeHandler.swift in Sources */,
+				B100001E /* TaskStoreKey.swift in Sources */,
+				B100001F /* DateRangeCalculator.swift in Sources */,
+				B1000020 /* DateFormatterCache.swift in Sources */,
+				B1000021 /* ColorExtensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		A1000046 /* Debug */ = {
+		B7000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -355,7 +359,7 @@
 			};
 			name = Debug;
 		};
-		A1000047 /* Release */ = {
+		B7000002 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -411,7 +415,7 @@
 			};
 			name = Release;
 		};
-		A1000048 /* Debug */ = {
+		B7000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -441,7 +445,7 @@
 			};
 			name = Debug;
 		};
-		A1000049 /* Release */ = {
+		B7000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -474,25 +478,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A0FFFFFA /* Build configuration list for PBXProject "ChengFengPlan" */ = {
+		B8000001 /* Build configuration list for PBXProject "ChengFengPlan" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A1000046 /* Debug */,
-				A1000047 /* Release */,
+				B7000001 /* Debug */,
+				B7000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A1000045 /* Build configuration list for PBXNativeTarget "ChengFengPlan" */ = {
+		B8000002 /* Build configuration list for PBXNativeTarget "ChengFengPlan" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A1000048 /* Debug */,
-				A1000049 /* Release */,
+				B7000003 /* Debug */,
+				B7000004 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = A0FFFFF7 /* Project object */;
+	rootObject = B6000001 /* Project object */;
 }
