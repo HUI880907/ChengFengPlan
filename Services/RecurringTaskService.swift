@@ -42,8 +42,8 @@ final class RecurringTaskService {
         return TaskItem(
             title: task.title,
             description: task.description,
-            status: .pending,
             priority: task.priority,
+            status: .pending,
             dueDate: newDueDate,
             tags: task.tags,
             parentTaskId: task.parentTaskId,
