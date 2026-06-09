@@ -36,7 +36,7 @@ struct SearchView: View {
                 if searchText.isEmpty {
                     searchHistorySection
                 } else {
-                    SearchResultsList(taskStore: taskStore, searchText: searchText)
+                    SearchResultsList(searchText: searchText)
                 }
             }
             .navigationTitle("搜索")
