@@ -142,9 +142,10 @@ struct SettingsView: View {
                                             notificationPermissionStatus = "被拒绝"
                                         } else {
                                             notificationPermissionStatus = "已授权"
-                                            // 设置每日提醒
-                                            await NotificationScheduler.shared.scheduleDailyReminder(time: reminderTime)
                                         }
+                                    }
+                                    if granted {
+                                        await NotificationScheduler.shared.scheduleDailyReminder(time: reminderTime)
                                     }
                                 } else {
                                     NotificationScheduler.shared.cancelDailyReminder()
