@@ -7,7 +7,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(TaskStore.self) private var taskStore
-    @Environment(\.colorScheme) private var systemColorScheme
     @State private var aiProvider: AIProvider = .zhipu
     @State private var apiKey = ""
     @State private var apiBaseURL = ""

@@ -114,7 +114,6 @@ struct StatisticsView: View {
                                     y: .value("数量", item.count)
                                 )
                                 .foregroundStyle(Color.themePrimary.gradient)
-                                .cornerRadius(4)
                             }
                             .frame(height: 200)
                         }
@@ -144,7 +143,6 @@ struct StatisticsView: View {
                                     y: .value("数量", item.count)
                                 )
                                 .foregroundStyle(Color.themeSecondary.gradient)
-                                .cornerRadius(4)
                             }
                             .frame(height: 200)
                         }
