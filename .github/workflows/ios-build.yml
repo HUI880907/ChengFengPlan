@@ -1,31 +1,32 @@
 # GitHub Actions iOS 构建配置
-# 乘风计划 - 在 Windows 上通过 GitHub Actions 云端打包 IPA
-# 费用：0 元（公开仓库免费，私有仓库每月 2000 分钟免费）
-# 国内加速：修改 hosts 或使用 Ghips 工具
+# 乘风计划 - 云端打包 IPA
 
 name: iOS Build
 
 on:
-  workflow_dispatch:  # 手动触发构建
+  workflow_dispatch:
   push:
     branches: [ main ]
 
 jobs:
   build:
-    runs-on: macos-15  # 使用 macOS 15 (M1) Runner
+    runs-on: macos-14
     
     steps:
       - name: 克隆代码
         uses: actions/checkout@v4
 
+      - name: 查看目录结构
+        run: ls -la
+
       - name: 设置 Xcode 版本
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.app
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
           xcodebuild -version
+          xcodebuild -showsdks
 
       - name: 构建 iOS App (Release)
         run: |
-          cd ChengFengPlan_v2
           xcodebuild \
             -project ChengFengPlan.xcodeproj \
             -scheme ChengFengPlan \
@@ -34,12 +35,14 @@ jobs:
             -archivePath $GITHUB_WORKSPACE/build/ChengFengPlan.xcarchive \
             archive \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
       - name: 打包未签名 IPA
         run: |
           mkdir -p $GITHUB_WORKSPACE/build/Payload
-          cp -R $GITHUB_WORKSPACE/build/ChengFengPlan.xcarchive/Products/Applications/ChengFengPlan.app $GITHUB_WORKSPACE/build/Payload/
+          cp -R $GITHUB_WORKSPACE/build/ChengFengPlan.xcarchive/Products/Applications/*.app $GITHUB_WORKSPACE/build/Payload/
           cd $GITHUB_WORKSPACE/build
           zip -r ChengFengPlan_unsigned.ipa Payload
           rm -rf Payload
@@ -50,6 +53,3 @@ jobs:
           name: ChengFengPlan-IPA
           path: build/ChengFengPlan_unsigned.ipa
           retention-days: 30
-
-      - name: 构建完成提示
-        run: echo "IPA 构建完成！请在 Actions 页面下载构建产物。"
