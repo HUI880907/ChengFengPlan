@@ -139,7 +139,7 @@ struct DraggableAddButton: View {
                 .foregroundStyle(.white)
                 .frame(width: isHidden ? hiddenRevealWidth : buttonSize, height: buttonSize)
                 .background(Color.themePrimary)
-                .clipShape(isHidden ? UnevenRoundedRectangle(cornerRadii: .init(topLeading: 28, bottomLeading: 28, bottomTrailing: 0, topTrailing: 0)) : Circle())
+                .clipShape(Circle())
                 .shadow(color: Color.themePrimary.opacity(0.3), radius: 8, x: 0, y: 4)
         }
         .position(x: currentX, y: currentY)

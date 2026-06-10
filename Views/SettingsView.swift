@@ -1226,7 +1226,7 @@ struct ShortcutCommandsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("使用说明")
                     .font(.caption.bold())
-                Label("在快捷指令 App 中添加"打开URL"操作", systemImage: "1.circle")
+                Label("在快捷指令 App 中添加\"打开URL\"操作", systemImage: "1.circle")
                     .font(.caption)
                 Label("粘贴上方生成的 URL 即可快速调用", systemImage: "2.circle")
                     .font(.caption)
