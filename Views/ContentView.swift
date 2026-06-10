@@ -98,22 +98,87 @@ struct ContentView: View {
         .padding(.leading, 16)
     }
 
-    // MARK: - Add Task FAB
+    // MARK: - Add Task FAB (Draggable)
 
     private var addButton: some View {
-        Button {
+        DraggableAddButton {
             showingAddTask = true
-        } label: {
+        }
+    }
+}
+
+// MARK: - DraggableAddButton
+
+struct DraggableAddButton: View {
+    let action: () -> Void
+
+    @State private var position: CGPoint = CGPoint(x: UIScreen.main.bounds.width - 48, y: UIScreen.main.bounds.height - 140)
+    @State private var isDragging = false
+    @State private var isHidden = false
+    @State private var dragOffset: CGSize = .zero
+
+    private let buttonSize: CGFloat = 56
+    private let edgeThreshold: CGFloat = 20
+    private let hiddenRevealWidth: CGFloat = 24
+
+    var body: some View {
+        let currentX = position.x + dragOffset.width
+        let currentY = position.y + dragOffset.height
+
+        return Button(action: {
+            if isHidden {
+                withAnimation(.spring()) {
+                    isHidden = false
+                }
+            } else {
+                action()
+            }
+        }) {
             Image(systemName: "plus")
                 .font(.title2.bold())
                 .foregroundStyle(.white)
-                .frame(width: 56, height: 56)
+                .frame(width: isHidden ? hiddenRevealWidth : buttonSize, height: buttonSize)
                 .background(Color.themePrimary)
-                .clipShape(Circle())
+                .clipShape(isHidden ? UnevenRoundedRectangle(cornerRadii: .init(topLeading: 28, bottomLeading: 28, bottomTrailing: 0, topTrailing: 0)) : Circle())
                 .shadow(color: Color.themePrimary.opacity(0.3), radius: 8, x: 0, y: 4)
         }
-        .padding(.trailing, 20)
-        .padding(.bottom, 80)
+        .position(x: currentX, y: currentY)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    isDragging = true
+                    dragOffset = value.translation
+                }
+                .onEnded { value in
+                    isDragging = false
+                    let newX = position.x + value.translation.width
+                    let newY = position.y + value.translation.height
+
+                    let screenWidth = UIScreen.main.bounds.width
+                    let screenHeight = UIScreen.main.bounds.height
+
+                    var finalX = max(buttonSize/2, min(screenWidth - buttonSize/2, newX))
+                    var finalY = max(100, min(screenHeight - 100, newY))
+
+                    // 贴边隐藏逻辑
+                    let isNearLeftEdge = finalX < edgeThreshold + buttonSize/2
+                    let isNearRightEdge = finalX > screenWidth - edgeThreshold - buttonSize/2
+
+                    withAnimation(.spring()) {
+                        if isNearRightEdge {
+                            finalX = screenWidth - hiddenRevealWidth/2
+                            isHidden = true
+                        } else if isNearLeftEdge {
+                            finalX = hiddenRevealWidth/2
+                            isHidden = true
+                        } else {
+                            isHidden = false
+                        }
+                        position = CGPoint(x: finalX, y: finalY)
+                        dragOffset = .zero
+                    }
+                }
+        )
     }
 }
 

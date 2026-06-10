@@ -15,6 +15,7 @@ struct TaskListView: View {
     @State private var isMultiSelectMode = false
     @State private var selectedTaskIds = Set<UUID>()
     @State private var showingPriorityPicker = false
+    @State private var navigationTask: TaskItem? = nil
 
     var body: some View {
         NavigationStack {
@@ -30,6 +31,8 @@ struct TaskListView: View {
                         .onTapGesture {
                             if isMultiSelectMode {
                                 toggleSelection(for: task.id)
+                            } else {
+                                navigationTask = task
                             }
                         }
                         .onLongPressGesture {
@@ -37,13 +40,6 @@ struct TaskListView: View {
                                 enterMultiSelectMode(initialTaskId: task.id)
                             }
                         }
-                        .background(
-                            NavigationLink(value: task) {
-                                EmptyView()
-                            }
-                            .opacity(0)
-                            .disabled(isMultiSelectMode)
-                        )
                         .swipeActions(edge: .leading) {
                             if !isMultiSelectMode {
                                 Button {
@@ -126,7 +122,7 @@ struct TaskListView: View {
                 .sheet(isPresented: $showingAddTask) {
                     AddEditTaskView()
                 }
-                .navigationDestination(for: TaskItem.self) { task in
+                .navigationDestination(item: $navigationTask) { task in
                     TaskDetailView(task: task)
                 }
 

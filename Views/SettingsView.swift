@@ -134,6 +134,8 @@ struct SettingsView: View {
                     }
 
                     SecureField("API Key", text: $apiKey)
+                        .submitLabel(.done)
+                        .onSubmit { hideKeyboard() }
                         .onChange(of: apiKey) { _, newValue in
                             SecureStore.shared.saveString(key: "ai_api_key_\(aiProvider.rawValue)", value: newValue)
                             AIManager.shared.setAPIKey(newValue, for: aiProvider)
@@ -147,6 +149,8 @@ struct SettingsView: View {
                                 .multilineTextAlignment(.trailing)
                                 .keyboardType(.URL)
                                 .textInputAutocapitalization(.never)
+                                .submitLabel(.done)
+                                .onSubmit { hideKeyboard() }
                         }
                     }
 
@@ -171,28 +175,45 @@ struct SettingsView: View {
 
                 // MARK: 通知设置
                 Section {
-                    Toggle("启用通知", isOn: $notificationsEnabled)
-                        .onChange(of: notificationsEnabled) { _, isOn in
-                            Task {
-                                if isOn {
-                                    let granted = await NotificationScheduler.shared.requestAuthorization()
-                                    await MainActor.run {
-                                        if !granted {
-                                            notificationsEnabled = false
-                                            notificationPermissionStatus = "被拒绝"
-                                        } else {
-                                            notificationPermissionStatus = "已授权"
-                                        }
-                                    }
-                                    if granted {
-                                        await NotificationScheduler.shared.scheduleDailyReminder(time: reminderTime)
-                                    }
-                                } else {
-                                    NotificationScheduler.shared.cancelDailyReminder()
+                    Button {
+                        Task {
+                            if notificationsEnabled {
+                                // 关闭通知
+                                await MainActor.run {
+                                    notificationsEnabled = false
                                     notificationPermissionStatus = "已关闭"
+                                }
+                                NotificationScheduler.shared.cancelDailyReminder()
+                            } else {
+                                // 请求权限
+                                let granted = await NotificationScheduler.shared.requestAuthorization()
+                                await MainActor.run {
+                                    if granted {
+                                        notificationsEnabled = true
+                                        notificationPermissionStatus = "已授权"
+                                    } else {
+                                        notificationsEnabled = false
+                                        notificationPermissionStatus = "被拒绝"
+                                    }
+                                }
+                                if granted {
+                                    await NotificationScheduler.shared.scheduleDailyReminder(time: reminderTime)
                                 }
                             }
                         }
+                    } label: {
+                        HStack {
+                            Text("启用通知")
+                            Spacer()
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(notificationsEnabled ? Color.green : Color.gray)
+                                    .frame(width: 8, height: 8)
+                                Text(notificationsEnabled ? "已开启" : "已关闭")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
 
                     LabeledContent("通知权限", value: notificationPermissionStatus)
 
@@ -309,35 +330,7 @@ struct SettingsView: View {
 
                 // MARK: 快捷指令
                 Section {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label("URL Scheme", systemImage: "link")
-                            .font(.headline)
-                        Text("chengfengplan://")
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                        Text("支持通过外部链接打开任务详情或快速添加任务。")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 4)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("打开任务")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("chengfengplan://task/{id}")
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("添加任务")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("chengfengplan://add?title=xxx&priority=high")
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                    }
+                    ShortcutCommandsView()
                 } header: {
                     Text("快捷指令集成")
                 } footer: {
@@ -389,6 +382,14 @@ struct SettingsView: View {
             .navigationTitle("设置")
             .onAppear {
                 loadSettings()
+            }
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("完成") {
+                        hideKeyboard()
+                    }
+                }
             }
         }
         .preferredColorScheme(darkModeEnabled ? .dark : .light)
@@ -474,6 +475,10 @@ struct SettingsView: View {
                 try? FileManager.default.removeItem(at: file)
             }
         }
+    }
+
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     private func resetStatistics() {
@@ -862,7 +867,7 @@ struct ExportDataView: View {
                 isPresented: $showFileExporter,
                 document: ExportDocument(url: exportURL),
                 contentType: .json,
-                defaultFilename: exportURL?.lastPathComponent ?? "ChengFengPlan_Export.json"
+                defaultFilename: exportURL?.lastPathComponent ?? FileSyncManager.shared.suggestedExportFilename
             ) { result in
                 handleExportResult(result)
             }
@@ -1144,6 +1149,384 @@ struct PrivacyPolicyView: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+// MARK: - ShortcutCommandsView
+
+struct ShortcutCommandsView: View {
+    @State private var showToast = false
+    @State private var toastMessage = ""
+    @State private var showGeneratorSheet = false
+
+    private let baseURL = "chengfengplan://"
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // 基础 URL Scheme
+            HStack {
+                Label("URL Scheme", systemImage: "link")
+                    .font(.headline)
+                Spacer()
+                CopyButton(text: baseURL) {
+                    showToast(message: "已复制 URL Scheme")
+                }
+            }
+
+            Text(baseURL)
+                .font(.system(.body, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .padding(8)
+                .background(Color.gray.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            Text("支持通过外部链接打开任务详情或快速添加任务。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Divider()
+
+            // 打开任务 URL
+            URLRow(
+                title: "打开任务",
+                description: "通过任务 ID 打开指定任务详情页",
+                url: "chengfengplan://task/{任务ID}",
+                copyText: "chengfengplan://task/",
+                onCopy: { showToast(message: "已复制打开任务 URL") }
+            )
+
+            // 添加任务 URL
+            URLRow(
+                title: "添加任务",
+                description: "快速创建新任务，支持标题、优先级、截止日期等参数",
+                url: "chengfengplan://add?title=任务标题&priority=high&dueDate=2026-06-10",
+                copyText: "chengfengplan://add?title=任务标题&priority=high&dueDate=2026-06-10",
+                onCopy: { showToast(message: "已复制添加任务 URL") }
+            )
+
+            Divider()
+
+            // 快捷指令模板生成器
+            Button {
+                showGeneratorSheet = true
+            } label: {
+                HStack {
+                    Image(systemName: "wand.and.stars")
+                    Text("快捷指令模板生成器")
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(.secondary)
+                }
+                .foregroundStyle(Color.themePrimary)
+            }
+            .padding(.vertical, 4)
+
+            // 使用说明
+            VStack(alignment: .leading, spacing: 6) {
+                Text("使用说明")
+                    .font(.caption.bold())
+                Label("在快捷指令 App 中添加"打开URL"操作", systemImage: "1.circle")
+                    .font(.caption)
+                Label("粘贴上方生成的 URL 即可快速调用", systemImage: "2.circle")
+                    .font(.caption)
+                Label("支持 Siri 语音触发快捷指令", systemImage: "3.circle")
+                    .font(.caption)
+            }
+            .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+        .sheet(isPresented: $showGeneratorSheet) {
+            ShortcutGeneratorView()
+        }
+        .toast(message: toastMessage, isError: false, isPresented: $showToast)
+    }
+
+    private func showToast(message: String) {
+        toastMessage = message
+        showToast = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            showToast = false
+        }
+    }
+}
+
+// MARK: - URLRow
+
+struct URLRow: View {
+    let title: String
+    let description: String
+    let url: String
+    let copyText: String
+    let onCopy: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline.bold())
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                CopyButton(text: copyText, onCopy: onCopy)
+            }
+
+            Text(url)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .padding(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.gray.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+    }
+}
+
+// MARK: - CopyButton
+
+struct CopyButton: View {
+    let text: String
+    let onCopy: () -> Void
+    @State private var isCopied = false
+
+    var body: some View {
+        Button {
+            UIPasteboard.general.string = text
+            isCopied = true
+            onCopy()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                isCopied = false
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                Text(isCopied ? "已复制" : "复制")
+            }
+            .font(.caption)
+            .foregroundStyle(isCopied ? Color.green : Color.themePrimary)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - ShortcutGeneratorView
+
+struct ShortcutGeneratorView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedTemplate: ShortcutTemplate = .quickAddTask
+    @State private var taskTitle = ""
+    @State private var selectedPriority: TaskPriority = .medium
+    @State private var dueDate = Date()
+    @State private var includeDueDate = false
+    @State private var generatedURL = ""
+    @State private var showToast = false
+    @State private var toastMessage = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("选择模板") {
+                    Picker("模板类型", selection: $selectedTemplate) {
+                        ForEach(ShortcutTemplate.allCases, id: \.self) { template in
+                            Text(template.displayName).tag(template)
+                        }
+                    }
+                    .pickerStyle(.navigationLink)
+
+                    Text(selectedTemplate.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if selectedTemplate == .quickAddTask {
+                    Section("任务参数") {
+                        TextField("任务标题", text: $taskTitle)
+
+                        Picker("优先级", selection: $selectedPriority) {
+                            ForEach(TaskPriority.allCases, id: \.self) { p in
+                                Text(p.displayName).tag(p)
+                            }
+                        }
+
+                        Toggle("设置截止日期", isOn: $includeDueDate)
+
+                        if includeDueDate {
+                            DatePicker("截止日期", selection: $dueDate, displayedComponents: .date)
+                        }
+                    }
+                }
+
+                Section("生成的 URL") {
+                    Text(generatedURL)
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .padding(8)
+                        .background(Color.gray.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .contextMenu {
+                            Button {
+                                UIPasteboard.general.string = generatedURL
+                                showToast(message: "已复制到剪贴板")
+                            } label: {
+                                Label("复制", systemImage: "doc.on.doc")
+                            }
+                        }
+
+                    Button {
+                        UIPasteboard.general.string = generatedURL
+                        showToast(message: "已复制到剪贴板")
+                    } label: {
+                        HStack {
+                            Image(systemName: "doc.on.doc")
+                            Text("复制 URL")
+                        }
+                    }
+                    .disabled(generatedURL.isEmpty)
+                }
+
+                Section("快捷指令配置步骤") {
+                    StepRow(number: 1, title: "打开快捷指令 App", detail: "在 iOS 设备上打开\"快捷指令\"应用")
+                    StepRow(number: 2, title: "创建新快捷指令", detail: "点击右上角 + 号创建新的快捷指令")
+                    StepRow(number: 3, title: "添加\"打开URL\"操作", detail: "搜索并添加\"打开URL\"操作到快捷指令中")
+                    StepRow(number: 4, title: "粘贴生成的 URL", detail: "将上方生成的 URL 粘贴到输入框中")
+                    StepRow(number: 5, title: "命名并保存", detail: "为快捷指令命名，例如\"添加乘风任务\"")
+                    StepRow(number: 6, title: "添加到主屏幕/Siri", detail: "可选择添加到主屏幕或设置 Siri 语音触发")
+                }
+            }
+            .navigationTitle("快捷指令模板")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") {
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                updateGeneratedURL()
+            }
+            .onChange(of: selectedTemplate) { _, _ in
+                updateGeneratedURL()
+            }
+            .onChange(of: taskTitle) { _, _ in
+                updateGeneratedURL()
+            }
+            .onChange(of: selectedPriority) { _, _ in
+                updateGeneratedURL()
+            }
+            .onChange(of: includeDueDate) { _, _ in
+                updateGeneratedURL()
+            }
+            .onChange(of: dueDate) { _, _ in
+                updateGeneratedURL()
+            }
+            .toast(message: toastMessage, isError: false, isPresented: $showToast)
+        }
+    }
+
+    private func updateGeneratedURL() {
+        switch selectedTemplate {
+        case .quickAddTask:
+            var components = URLComponents()
+            components.scheme = "chengfengplan"
+            components.host = "add"
+
+            var queryItems: [URLQueryItem] = []
+            let title = taskTitle.isEmpty ? "新任务" : taskTitle
+            queryItems.append(URLQueryItem(name: "title", value: title))
+            queryItems.append(URLQueryItem(name: "priority", value: selectedPriority.rawValue))
+
+            if includeDueDate {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM-dd"
+                queryItems.append(URLQueryItem(name: "dueDate", value: formatter.string(from: dueDate)))
+            }
+
+            components.queryItems = queryItems
+            generatedURL = components.url?.absoluteString ?? ""
+
+        case .openApp:
+            generatedURL = "chengfengplan://"
+
+        case .addHighPriorityTask:
+            generatedURL = "chengfengplan://add?title=紧急任务&priority=high"
+
+        case .addTodayTask:
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            let today = formatter.string(from: Date())
+            generatedURL = "chengfengplan://add?title=今日任务&priority=medium&dueDate=\(today)"
+        }
+    }
+
+    private func showToast(message: String) {
+        toastMessage = message
+        showToast = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            showToast = false
+        }
+    }
+}
+
+// MARK: - ShortcutTemplate
+
+enum ShortcutTemplate: String, CaseIterable {
+    case quickAddTask = "quickAdd"
+    case openApp = "openApp"
+    case addHighPriorityTask = "addHighPriority"
+    case addTodayTask = "addToday"
+
+    var displayName: String {
+        switch self {
+        case .quickAddTask: return "自定义添加任务"
+        case .openApp: return "打开乘风计划"
+        case .addHighPriorityTask: return "添加高优先级任务"
+        case .addTodayTask: return "添加今日截止任务"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .quickAddTask:
+            return "自定义任务标题、优先级和截止日期，生成对应的快捷指令 URL"
+        case .openApp:
+            return "仅打开乘风计划 App，不执行其他操作"
+        case .addHighPriorityTask:
+            return "快速添加一个标题为\"紧急任务\"的高优先级任务"
+        case .addTodayTask:
+            return "快速添加一个标题为\"今日任务\"、截止日期为今天的任务"
+        }
+    }
+}
+
+// MARK: - StepRow
+
+struct StepRow: View {
+    let number: Int
+    let title: String
+    let detail: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text("\(number)")
+                .font(.caption.bold())
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(Color.themePrimary)
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.bold())
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 

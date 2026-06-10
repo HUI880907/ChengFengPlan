@@ -69,7 +69,7 @@ final class FileSyncManager {
 
     /// 导出文件存放目录（iOS 文件 App 可见）
     private var exportsDirectoryURL: URL {
-        let url = documentsURL.appendingPathComponent("Exports", isDirectory: true)
+        let url = documentsURL.appendingPathComponent("乘风计划", isDirectory: true)
         // 设置目录为共享可见，使文件 App 可以访问
         return url
     }
@@ -96,7 +96,7 @@ final class FileSyncManager {
             encoder.dateEncodingStrategy = .iso8601
             let data = try encoder.encode(container)
 
-            let filename = "ChengFengPlan_Export_\(dateString()).json"
+            let filename = "乘风计划_\(dateString()).json"
             let url = exportsDirectoryURL.appendingPathComponent(filename)
 
             // 确保目录存在
@@ -198,7 +198,7 @@ final class FileSyncManager {
                 options: .skipsHiddenFiles
             )
             return files
-                .filter { $0.lastPathComponent.hasPrefix("ChengFengPlan_Export_") && $0.pathExtension == "json" }
+                .filter { $0.lastPathComponent.hasPrefix("乘风计划_") && $0.pathExtension == "json" }
                 .sorted {
                     let d1 = (try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date.distantPast
                     let d2 = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date.distantPast
@@ -262,7 +262,13 @@ final class FileSyncManager {
         }
     }
 
-    private func dateString() -> String {
+    /// 建议的导出文件名（供 UI 使用）
+    var suggestedExportFilename: String {
+        return "乘风计划_\(dateString()).json"
+    }
+
+    /// 生成 yyyyMMdd_HHmmss 格式的时间字符串
+    func dateString() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd_HHmmss"
         return formatter.string(from: Date())

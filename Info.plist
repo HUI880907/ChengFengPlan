@@ -52,6 +52,10 @@
     <string>乘风计划需要访问相册以添加任务附件</string>
     <key>NSUserNotificationsUsageDescription</key>
     <string>乘风计划需要发送任务提醒通知</string>
+    <key>UIFileSharingEnabled</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
