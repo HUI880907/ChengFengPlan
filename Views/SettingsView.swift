@@ -484,10 +484,6 @@ struct SettingsView: View {
         }
     }
 
-    private func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-
     private func resetStatistics() {
         // 重置统计相关数据
         let statsKeys = [
