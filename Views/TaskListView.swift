@@ -180,34 +180,35 @@ struct TaskListView: View {
 
     // MARK: - Batch Actions
 
-    @MainActor
     private func batchMarkCompleted() {
-        for id in selectedTaskIds {
-            taskStore.toggleTaskCompletion(id: id)
-        }
-        cancelMultiSelect()
-    }
-
-    @MainActor
-    private func batchDelete() {
-        for id in selectedTaskIds {
-            taskStore.deleteTask(id: id)
-        }
-        cancelMultiSelect()
-    }
-
-    @MainActor
-    private func batchChangePriority(to priority: TaskPriority) {
-        for id in selectedTaskIds {
-            if let index = taskStore.tasks.firstIndex(where: { $0.id == id }) {
-                taskStore.tasks[index].priority = priority
-                taskStore.tasks[index].updatedAt = Date()
-            }
-        }
         Task { @MainActor in
-            await taskStore.saveTasks()
+            for id in selectedTaskIds {
+                taskStore.toggleTaskCompletion(id: id)
+            }
+            cancelMultiSelect()
         }
-        cancelMultiSelect()
+    }
+
+    private func batchDelete() {
+        Task { @MainActor in
+            for id in selectedTaskIds {
+                taskStore.deleteTask(id: id)
+            }
+            cancelMultiSelect()
+        }
+    }
+
+    private func batchChangePriority(to priority: TaskPriority) {
+        Task { @MainActor in
+            for id in selectedTaskIds {
+                if let index = taskStore.tasks.firstIndex(where: { $0.id == id }) {
+                    taskStore.tasks[index].priority = priority
+                    taskStore.tasks[index].updatedAt = Date()
+                }
+            }
+            await taskStore.saveTasks()
+            cancelMultiSelect()
+        }
     }
 
     // MARK: - Bottom Toolbar View
@@ -221,9 +222,7 @@ struct TaskListView: View {
                     title: "完成",
                     color: .green
                 ) {
-                    Task { @MainActor in
-                        batchMarkCompleted()
-                    }
+                    batchMarkCompleted()
                 }
 
                 BatchActionButton(
@@ -231,9 +230,7 @@ struct TaskListView: View {
                     title: "删除",
                     color: .red
                 ) {
-                    Task { @MainActor in
-                        batchDelete()
-                    }
+                    batchDelete()
                 }
 
                 BatchActionButton(
