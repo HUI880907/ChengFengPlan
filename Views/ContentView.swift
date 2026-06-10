@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showingBriefing = false
     @State private var showingAddTask = false
+    @State private var showingSettings = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -47,16 +48,9 @@ struct ContentView: View {
                     Label("助手", systemImage: "sparkles")
                 }
                 .tag(4)
-
-            // MARK: 设置
-            SettingsView()
-                .tabItem {
-                    Label("设置", systemImage: "gear")
-                }
-                .tag(5)
         }
-        .overlay(alignment: .topTrailing) {
-            dailyBriefingButton
+        .overlay(alignment: .topLeading) {
+            topLeftButtons
         }
         .overlay(alignment: .bottomTrailing) {
             addButton
@@ -67,23 +61,41 @@ struct ContentView: View {
         .sheet(isPresented: $showingAddTask) {
             AddEditTaskView()
         }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+        }
     }
 
-    // MARK: - Daily Briefing Button
+    // MARK: - Top Left Buttons (Settings + Daily Briefing)
 
-    private var dailyBriefingButton: some View {
-        Button {
-            showingBriefing = true
-        } label: {
-            Image(systemName: "sunrise.fill")
-                .font(.title3)
-                .foregroundStyle(.orange)
-                .padding(8)
-                .background(.ultraThinMaterial)
-                .clipShape(Circle())
+    private var topLeftButtons: some View {
+        HStack(spacing: 12) {
+            // 设置按钮
+            Button {
+                showingSettings = true
+            } label: {
+                Image(systemName: "gear")
+                    .font(.title3)
+                    .foregroundStyle(.primary)
+                    .padding(8)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+            }
+
+            // 每日简报按钮
+            Button {
+                showingBriefing = true
+            } label: {
+                Image(systemName: "sunrise.fill")
+                    .font(.title3)
+                    .foregroundStyle(.orange)
+                    .padding(8)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+            }
         }
         .padding(.top, 8)
-        .padding(.trailing, 16)
+        .padding(.leading, 16)
     }
 
     // MARK: - Add Task FAB

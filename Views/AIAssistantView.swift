@@ -3,17 +3,50 @@
 
 import SwiftUI
 
+// MARK: - ParsedTaskInfo
+
+/// 从自然语言中解析出的任务信息
+struct ParsedTaskInfo: Identifiable {
+    let id = UUID()
+    var title: String
+    var dueDate: Date?
+    var location: String?
+    var description: String
+    var priority: TaskPriority = .medium
+}
+
+// MARK: - UserIntent
+
+/// 识别到的用户意图
+enum UserIntent {
+    case createTask(ParsedTaskInfo)
+    case deleteTask(TaskItem)
+    case completeTask(TaskItem)
+    case updateTask(TaskItem)
+    case query(String)
+    case unknown
+}
+
 // MARK: - AIAssistantView
 
 @MainActor
 struct AIAssistantView: View {
     @Environment(TaskStore.self) private var taskStore
     @State private var messages: [ChatMessage] = [
-        ChatMessage(role: .assistant, content: "您好！我是乘风计划的 AI 助手。我可以帮您分析任务、提供建议或总结今天的工作。请问有什么可以帮您的吗？")
+        ChatMessage(role: .assistant, content: "您好！我是乘风计划的 AI 助手。我可以帮您分析任务、提供建议、总结今天的工作，甚至直接帮您创建、删除或完成任务。请问有什么可以帮您的吗？")
     ]
     @State private var inputText = ""
     @State private var isLoading = false
     @FocusState private var isInputFocused: Bool
+
+    // MARK: - Dialog States
+    @State private var showCreateConfirm = false
+    @State private var showDeleteConfirm = false
+    @State private var showCompleteConfirm = false
+    @State private var showEditSheet = false
+    @State private var pendingParsedTask: ParsedTaskInfo?
+    @State private var pendingTaskItem: TaskItem?
+    @State private var pendingTaskForEdit: TaskItem?
 
     var body: some View {
         NavigationStack {
@@ -59,6 +92,72 @@ struct AIAssistantView: View {
                 inputBar
             }
             .navigationTitle("AI 助手")
+        }
+        // MARK: - Confirmation Dialogs
+        .confirmationDialog(
+            "确认创建任务",
+            isPresented: $showCreateConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("确认创建", role: .none) {
+                if let info = pendingParsedTask {
+                    createTaskFromParsed(info)
+                }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            if let info = pendingParsedTask {
+                Text("标题：\(info.title)\n" +
+                     (info.dueDate != nil ? "时间：\(formatDate(info.dueDate!))\n" : "") +
+                     (info.location != nil ? "地点：\(info.location!)\n" : "") +
+                     "\n是否确认创建此任务？")
+            }
+        }
+        .alert(
+            "确认删除任务",
+            isPresented: $showDeleteConfirm
+        ) {
+            Button("删除", role: .destructive) {
+                if let task = pendingTaskItem {
+                    taskStore.deleteTask(id: task.id)
+                    let msg = ChatMessage(role: .assistant, content: "✅ 已删除任务「\(task.title)」")
+                    messages.append(msg)
+                    AIManager.shared.chatHistory.append(msg)
+                }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            if let task = pendingTaskItem {
+                Text("确定要删除任务「\(task.title)」吗？此操作不可撤销。")
+            }
+        }
+        .alert(
+            "确认完成任务",
+            isPresented: $showCompleteConfirm
+        ) {
+            Button("标记完成", role: .none) {
+                if let task = pendingTaskItem {
+                    taskStore.toggleTaskCompletion(id: task.id)
+                    let msg = ChatMessage(role: .assistant, content: "✅ 已将任务「\(task.title)」标记为已完成，恭喜！")
+                    messages.append(msg)
+                    AIManager.shared.chatHistory.append(msg)
+                }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            if let task = pendingTaskItem {
+                Text("确定要将「\(task.title)」标记为已完成吗？")
+            }
+        }
+        .sheet(isPresented: $showEditSheet) {
+            if let task = pendingTaskForEdit {
+                TaskEditSheet(task: task, onSave: { updatedTask in
+                    taskStore.updateTask(updatedTask)
+                    let msg = ChatMessage(role: .assistant, content: "✅ 已更新任务「\(updatedTask.title)」")
+                    messages.append(msg)
+                    AIManager.shared.chatHistory.append(msg)
+                })
+            }
         }
     }
 
@@ -127,19 +226,42 @@ struct AIAssistantView: View {
 
         let userMessage = ChatMessage(role: .user, content: text)
         messages.append(userMessage)
+        AIManager.shared.chatHistory.append(userMessage)
         inputText = ""
         isLoading = true
+
+        // 先尝试识别用户意图（创建/删除/完成任务）
+        if let intent = detectIntent(from: text) {
+            isLoading = false
+            handleIntent(intent, originalText: text)
+            return
+        }
 
         // 尝试调用真实AI，如果没有配置API Key则使用本地分析
         Task {
             let response = await AIManager.shared.chat(prompt: text)
             await MainActor.run {
                 if response.isSuccess && !response.content.isEmpty {
-                    messages.append(ChatMessage(role: .assistant, content: response.content))
+                    let assistantContent = response.content
+                    // 检查 AI 响应是否包含创建任务的关键词
+                    if let parsedTask = parseTaskFromAIResponse(assistantContent, originalInput: text) {
+                        isLoading = false
+                        pendingParsedTask = parsedTask
+                        showCreateConfirm = true
+                        let msg = ChatMessage(role: .assistant, content: assistantContent)
+                        messages.append(msg)
+                        AIManager.shared.chatHistory.append(msg)
+                    } else {
+                        let msg = ChatMessage(role: .assistant, content: assistantContent)
+                        messages.append(msg)
+                        AIManager.shared.chatHistory.append(msg)
+                    }
                 } else {
                     // Fallback到本地分析
                     let localResponse = generateLocalResponse(to: text)
-                    messages.append(ChatMessage(role: .assistant, content: localResponse))
+                    let msg = ChatMessage(role: .assistant, content: localResponse)
+                    messages.append(msg)
+                    AIManager.shared.chatHistory.append(msg)
                 }
                 isLoading = false
             }
@@ -151,13 +273,271 @@ struct AIAssistantView: View {
         sendMessage()
     }
 
+    // MARK: - Intent Detection & Handling
+
+    /// 检测用户意图（创建/删除/完成/修改任务）
+    private func detectIntent(from text: String) -> UserIntent? {
+        let lowerText = text.lowercased()
+
+        // 1. 删除任务意图
+        if lowerText.contains("删除") {
+            if let task = findTaskByKeyword(in: text) {
+                return .deleteTask(task)
+            }
+        }
+
+        // 2. 完成任务意图
+        if lowerText.contains("完成") || lowerText.contains("做完") || lowerText.contains("标记完成") {
+            if let task = findTaskByKeyword(in: text) {
+                return .completeTask(task)
+            }
+        }
+
+        // 3. 修改任务意图
+        if lowerText.contains("修改") || lowerText.contains("编辑") || lowerText.contains("更改") {
+            if let task = findTaskByKeyword(in: text) {
+                return .updateTask(task)
+            }
+        }
+
+        // 4. 创建任务意图（包含时间/地点信息）
+        let createKeywords = ["创建任务", "添加任务", "新建任务", "设置任务", "安排", "提醒"]
+        let hasCreateKeyword = createKeywords.contains { lowerText.contains($0) }
+        let hasTimeOrLocation = containsTimeOrLocationInfo(text)
+
+        if hasCreateKeyword || hasTimeOrLocation {
+            if let parsedTask = parseNaturalLanguageTask(text) {
+                return .createTask(parsedTask)
+            }
+        }
+
+        return nil
+    }
+
+    /// 处理识别到的意图
+    private func handleIntent(_ intent: UserIntent, originalText: String) {
+        switch intent {
+        case .createTask(let info):
+            pendingParsedTask = info
+            showCreateConfirm = true
+            let msg = ChatMessage(role: .assistant, content: "我为您解析到以下任务信息：\n\n标题：\(info.title)\n" +
+                (info.dueDate != nil ? "时间：\(formatDate(info.dueDate!))\n" : "") +
+                (info.location != nil ? "地点：\(info.location!)\n" : "") +
+                "\n请确认是否创建此任务？")
+            messages.append(msg)
+            AIManager.shared.chatHistory.append(msg)
+
+        case .deleteTask(let task):
+            pendingTaskItem = task
+            showDeleteConfirm = true
+            let msg = ChatMessage(role: .assistant, content: "找到任务「\(task.title)」，请确认是否删除？")
+            messages.append(msg)
+            AIManager.shared.chatHistory.append(msg)
+
+        case .completeTask(let task):
+            pendingTaskItem = task
+            showCompleteConfirm = true
+            let msg = ChatMessage(role: .assistant, content: "找到任务「\(task.title)」，请确认是否标记为已完成？")
+            messages.append(msg)
+            AIManager.shared.chatHistory.append(msg)
+
+        case .updateTask(let task):
+            pendingTaskForEdit = task
+            showEditSheet = true
+            let msg = ChatMessage(role: .assistant, content: "已打开任务「\(task.title)」的编辑界面，请修改后保存。")
+            messages.append(msg)
+            AIManager.shared.chatHistory.append(msg)
+
+        case .query, .unknown:
+            break
+        }
+    }
+
+    /// 根据关键词查找任务
+    private func findTaskByKeyword(in text: String) -> TaskItem? {
+        // 提取引号内的内容或"xxx任务"中的xxx
+        let patterns = [
+            "「([^」]+)"",
+            "\\\"([^\"]+)\\\"",
+            "'([^']+)'",
+            "《([^》]+)》",
+            "删除(.+?)任务",
+            "完成(.+?)任务",
+            "修改(.+?)任务",
+            "编辑(.+?)任务"
+        ]
+
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+               let match = regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count)) {
+                if let range = Range(match.range(at: 1), in: text) {
+                    let keyword = String(text[range]).trimmingCharacters(in: .whitespaces)
+                    if let task = taskStore.searchTasks(query: keyword).first {
+                        return task
+                    }
+                }
+            }
+        }
+
+        // 如果没有匹配到引号内容，尝试用整句话搜索（去掉常见动词）
+        let cleaned = text
+            .replacingOccurrences(of: "删除", with: "")
+            .replacingOccurrences(of: "完成", with: "")
+            .replacingOccurrences(of: "修改", with: "")
+            .replacingOccurrences(of: "编辑", with: "")
+            .replacingOccurrences(of: "任务", with: "")
+            .trimmingCharacters(in: .whitespaces)
+
+        if !cleaned.isEmpty {
+            return taskStore.searchTasks(query: cleaned).first
+        }
+
+        return nil
+    }
+
+    /// 检查文本是否包含时间或地点信息
+    private func containsTimeOrLocationInfo(_ text: String) -> Bool {
+        let timePatterns = ["明天", "后天", "今天", "下午", "上午", "晚上", "早上", "点", "分", "号", "日", "周", "星期", "月"]
+        let locationPatterns = ["在", "去", "到", "会议室", "办公室", "家里", "学校", "公司"]
+        return timePatterns.contains { text.contains($0) } || locationPatterns.contains { text.contains($0) }
+    }
+
+    /// 从自然语言解析任务信息
+    private func parseNaturalLanguageTask(_ text: String) -> ParsedTaskInfo? {
+        var title = text
+        var dueDate: Date?
+        var location: String?
+        var description = ""
+
+        let calendar = Calendar.current
+        let now = Date()
+
+        // 解析日期
+        if text.contains("明天") {
+            dueDate = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now))
+            title = title.replacingOccurrences(of: "明天", with: "")
+        } else if text.contains("后天") {
+            dueDate = calendar.date(byAdding: .day, value: 2, to: calendar.startOfDay(for: now))
+            title = title.replacingOccurrences(of: "后天", with: "")
+        } else if text.contains("今天") {
+            dueDate = calendar.startOfDay(for: now)
+            title = title.replacingOccurrences(of: "今天", with: "")
+        }
+
+        // 解析时间（下午1点、上午9点、晚上8点等）
+        let timePatterns: [(pattern: String, hourOffset: Int)] = [
+            ("下午([0-9]+)点", 12),
+            ("晚上([0-9]+)点", 12),
+            ("上午([0-9]+)点", 0),
+            ("早上([0-9]+)点", 0),
+            ("凌晨([0-9]+)点", 0),
+            ("([0-9]+)点", 0)
+        ]
+
+        for (pattern, hourOffset) in timePatterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+               let match = regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count)),
+               let range = Range(match.range(at: 1), in: text),
+               let hour = Int(text[range]) {
+                var adjustedHour = hour
+                if hourOffset == 12 && hour < 12 {
+                    adjustedHour = hour + 12
+                }
+                if let baseDate = dueDate ?? calendar.startOfDay(for: now) {
+                    dueDate = calendar.date(bySettingHour: adjustedHour, minute: 0, second: 0, of: baseDate)
+                }
+                title = title.replacingOccurrences(of: String(text[Range(match.range(at: 0), in: text)!]), with: "")
+                break
+            }
+        }
+
+        // 解析分钟（如 1点30分）
+        if let minuteRegex = try? NSRegularExpression(pattern: "([0-9]+)点([0-9]+)分", options: []),
+           let minuteMatch = minuteRegex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count)),
+           let hourRange = Range(minuteMatch.range(at: 1), in: text),
+           let minuteRange = Range(minuteMatch.range(at: 2), in: text),
+           let hour = Int(text[hourRange]),
+           let minute = Int(text[minuteRange]) {
+            if let baseDate = dueDate ?? calendar.startOfDay(for: now) {
+                dueDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: baseDate)
+            }
+        }
+
+        // 解析地点（在xxx）
+        let locationPatterns = [
+            "在(.+?)(开会|见面|等|做|进行)",
+            "去(.+?)(开会|见面|等|做|进行)",
+            "到(.+?)(开会|见面|等|做|进行)",
+            "在(.+?)[，。]",
+            "在(.+?)$"
+        ]
+        for pattern in locationPatterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+               let match = regex.firstMatch(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count)),
+               let range = Range(match.range(at: 1), in: text) {
+                location = String(text[range]).trimmingCharacters(in: .whitespaces)
+                title = title.replacingOccurrences(of: String(text[Range(match.range(at: 0), in: text)!]), with: "")
+                break
+            }
+        }
+
+        // 清理标题中的常见动词和助词
+        let cleanupWords = ["创建任务", "添加任务", "新建任务", "设置任务", "安排", "提醒", "我", "要", "请", "帮我", "给我", "一下", "一个"]
+        for word in cleanupWords {
+            title = title.replacingOccurrences(of: word, with: "")
+        }
+
+        title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "，。！？、"))
+
+        if title.isEmpty {
+            title = "新任务"
+        }
+
+        if let loc = location {
+            description = "地点：\(loc)"
+        }
+
+        return ParsedTaskInfo(title: title, dueDate: dueDate, location: location, description: description)
+    }
+
+    /// 从 AI 响应中解析任务创建意图
+    private func parseTaskFromAIResponse(_ response: String, originalInput: String) -> ParsedTaskInfo? {
+        let createIndicators = ["已创建", "已设置", "已添加", "已安排", "已为您创建", "已帮您设置"]
+        let hasCreateIndicator = createIndicators.contains { response.contains($0) }
+
+        if hasCreateIndicator {
+            return parseNaturalLanguageTask(originalInput)
+        }
+        return nil
+    }
+
+    /// 实际创建任务
+    private func createTaskFromParsed(_ info: ParsedTaskInfo) {
+        let newTask = TaskItem(
+            title: info.title,
+            description: info.description,
+            priority: info.priority,
+            status: .pending,
+            dueDate: info.dueDate
+        )
+        taskStore.addTask(newTask)
+        let msg = ChatMessage(role: .assistant, content: "✅ 已成功创建任务「\(info.title)」" +
+            (info.dueDate != nil ? "，截止时间：\(formatDate(info.dueDate!))" : "") +
+            (info.location != nil ? "，地点：\(info.location!)" : ""))
+        messages.append(msg)
+        AIManager.shared.chatHistory.append(msg)
+    }
+
+    // MARK: - Local Response Generation
+
     private func generateLocalResponse(to message: String) -> String {
         let tasks = taskStore.tasks
         let totalTasks = tasks.count
         let completedCount = tasks.filter { $0.status == .completed }.count
         let overdueCount = taskStore.getOverdueTasks().count
         let todayTasks = taskStore.getTasksForDate(Date())
-        let highPriority = tasks.filter { $0.priority == .high || $0.priority == .urgent && $0.status != .completed }
+        let highPriority = tasks.filter { ($0.priority == .high || $0.priority == .urgent) && $0.status != .completed }
         let pendingTasks = tasks.filter { $0.status == .pending }
         let inProgressTasks = tasks.filter { $0.status == .inProgress }
 
@@ -285,7 +665,94 @@ struct AIAssistantView: View {
                 "6. 设定明确的每日目标\n" +
                 "7. 完成重要任务后给自己奖励"
         }
-        return "收到您的消息，我会尽力帮助您。您可以试试上方的快捷按钮，或直接描述您的需求。"
+        return "收到您的消息，我会尽力帮助您。您可以试试上方的快捷按钮，或直接描述您的需求。例如：\n• \"明天下午1点在2号会议室开会\"\n• \"删除xxx任务\"\n• \"完成xxx任务\""
+    }
+
+    // MARK: - Helpers
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        if Calendar.current.isDateInToday(date) {
+            formatter.dateFormat = "今天 HH:mm"
+        } else if Calendar.current.isDateInTomorrow(date) {
+            formatter.dateFormat = "明天 HH:mm"
+        } else {
+            formatter.dateFormat = "MM月dd日 HH:mm"
+        }
+        return formatter.string(from: date)
+    }
+}
+
+// MARK: - TaskEditSheet
+
+/// 任务编辑弹窗（简化版）
+struct TaskEditSheet: View {
+    let task: TaskItem
+    var onSave: (TaskItem) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var title: String
+    @State private var description: String
+    @State private var priority: TaskPriority
+    @State private var dueDate: Date
+    @State private var hasDueDate: Bool
+
+    init(task: TaskItem, onSave: @escaping (TaskItem) -> Void) {
+        self.task = task
+        self.onSave = onSave
+        _title = State(initialValue: task.title)
+        _description = State(initialValue: task.description)
+        _priority = State(initialValue: task.priority)
+        _dueDate = State(initialValue: task.dueDate ?? Date())
+        _hasDueDate = State(initialValue: task.dueDate != nil)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("任务信息") {
+                    TextField("标题", text: $title)
+                    TextField("描述", text: $description, axis: .vertical)
+                        .lineLimit(2...5)
+                }
+
+                Section("优先级") {
+                    Picker("优先级", selection: $priority) {
+                        ForEach(TaskPriority.allCases) { p in
+                            Text(p.displayName).tag(p)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section("截止时间") {
+                    Toggle("设置截止时间", isOn: $hasDueDate)
+                    if hasDueDate {
+                        DatePicker("截止时间", selection: $dueDate)
+                    }
+                }
+            }
+            .navigationTitle("编辑任务")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        var updated = task
+                        updated.title = title
+                        updated.description = description
+                        updated.priority = priority
+                        updated.dueDate = hasDueDate ? dueDate : nil
+                        onSave(updated)
+                        dismiss()
+                    }
+                    .disabled(title.isEmpty)
+                }
+            }
+        }
     }
 }
 

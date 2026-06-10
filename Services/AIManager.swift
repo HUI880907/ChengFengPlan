@@ -44,10 +44,14 @@ final class AIManager {
     // MARK: - Private Properties
 
     private var currentService: AIServiceProtocol?
+    private let cache = NSCache<NSString, AIResponse>()
+    private let processingQueue = DispatchQueue(label: "com.chengfengplan.ai", qos: .userInitiated)
 
     // MARK: - Initialization
 
     private init() {
+        cache.countLimit = 50
+        cache.totalCostLimit = 10 * 1024 * 1024
         loadAPIKeys()
         updateCurrentService()
     }
@@ -73,6 +77,15 @@ final class AIManager {
 
     /// 发送聊天消息（nonisolated，可从任意线程调用）
     nonisolated func chat(prompt: String) async -> AIResponse {
+        let provider = await MainActor.run {
+            AIManager.shared.currentProvider
+        }
+        let cacheKey = "\(provider.rawValue)_\(prompt)" as NSString
+
+        if let cachedResponse = await MainActor.run({ AIManager.shared.cache.object(forKey: cacheKey) }) {
+            return cachedResponse
+        }
+
         let service = await MainActor.run {
             AIManager.shared.currentService
         }
@@ -95,6 +108,7 @@ final class AIManager {
             if response.isSuccess {
                 let assistantMessage = ChatMessage(role: .assistant, content: response.content)
                 AIManager.shared.chatHistory.append(assistantMessage)
+                AIManager.shared.cache.setObject(response, forKey: cacheKey)
             } else {
                 AIManager.shared.lastError = response.errorMessage
             }

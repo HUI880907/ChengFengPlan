@@ -14,6 +14,8 @@ struct AddEditTaskView: View {
     @State private var title = ""
     @State private var description = ""
     @State private var priority: TaskPriority = .medium
+    @State private var startDate = Date()
+    @State private var hasStartDate = false
     @State private var dueDate = Date()
     @State private var hasDueDate = false
     @State private var tags: [UUID] = []
@@ -33,9 +35,14 @@ struct AddEditTaskView: View {
         if let task = task {
             _title = State(initialValue: task.title)
             _priority = State(initialValue: task.priority)
+            _startDate = State(initialValue: task.createdAt)
+            _hasStartDate = State(initialValue: true)
             _dueDate = State(initialValue: task.dueDate ?? Date())
             _hasDueDate = State(initialValue: task.dueDate != nil)
             _tags = State(initialValue: task.tags)
+        } else {
+            _startDate = State(initialValue: Date())
+            _hasStartDate = State(initialValue: true)
         }
     }
 
@@ -44,6 +51,8 @@ struct AddEditTaskView: View {
         self.task = nil
         _title = State(initialValue: "")
         _priority = State(initialValue: .medium)
+        _startDate = State(initialValue: Date())
+        _hasStartDate = State(initialValue: true)
         _dueDate = State(initialValue: initialDueDate)
         _hasDueDate = State(initialValue: true)
         _tags = State(initialValue: [])
@@ -65,10 +74,19 @@ struct AddEditTaskView: View {
                                 Circle()
                                     .fill(p.color)
                                     .frame(width: 8, height: 8)
-                                Text(p.rawValue)
+                                Text(p.displayName)
                             }
                             .tag(p)
                         }
+                    }
+                }
+
+                // MARK: 开始日期
+                Section("开始日期") {
+                    Toggle("设置开始日期", isOn: $hasStartDate)
+                    if hasStartDate {
+                        DatePicker("", selection: $startDate, displayedComponents: [.date, .hourAndMinute])
+                            .datePickerStyle(.graphical)
                     }
                 }
 
@@ -199,27 +217,13 @@ struct AddEditTaskView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("保存") {
-                        if let existingTask = task {
-                            existingTask.title = title
-                            existingTask.description = description
-                            existingTask.priority = priority
-                            existingTask.dueDate = hasDueDate ? dueDate : nil
-                            existingTask.tags = tags
-                            taskStore.updateTask(existingTask)
-                        } else {
-                            let newTask = TaskItem(
-                                title: title,
-                                description: description,
-                                priority: priority,
-                                dueDate: hasDueDate ? dueDate : nil,
-                                tags: tags
-                            )
-                            taskStore.addTask(newTask)
-                        }
-                        dismiss()
+                        saveTask()
                     }
                     .disabled(title.isEmpty)
                 }
+            }
+            .onAppear {
+                loadExistingSubtasks()
             }
             .sheet(isPresented: $showingAIAssist) {
                 AIAssistView(title: $title, description: $description)
@@ -229,6 +233,120 @@ struct AddEditTaskView: View {
     }
 
     // MARK: - Methods
+
+    private func saveTask() {
+        if let existingTask = task {
+            // 编辑已有任务
+            existingTask.title = title
+            existingTask.description = description
+            existingTask.priority = priority
+            existingTask.dueDate = hasDueDate ? dueDate : nil
+            existingTask.tags = tags
+            taskStore.updateTask(existingTask)
+
+            // 同步子任务：移除已删除的，添加新增的
+            syncSubtasks(for: existingTask)
+
+            // 处理新选择的附件
+            processAttachments(for: existingTask)
+        } else {
+            // 创建新任务
+            let newTask = TaskItem(
+                title: title,
+                description: description,
+                priority: priority,
+                createdAt: hasStartDate ? startDate : Date(),
+                dueDate: hasDueDate ? dueDate : nil,
+                tags: tags
+            )
+            taskStore.addTask(newTask)
+
+            // 为新任务创建子任务
+            for subtask in subtasks {
+                let childTask = TaskItem(
+                    title: subtask.title,
+                    parentTaskId: newTask.id
+                )
+                if subtask.isCompleted {
+                    childTask.markAsCompleted()
+                }
+                taskStore.addTask(childTask)
+                newTask.addSubTask(childTask.id)
+            }
+
+            // 处理附件
+            processAttachments(for: newTask)
+        }
+        dismiss()
+    }
+
+    /// 同步子任务（编辑模式）：对比现有子任务和当前 subtasks 数组
+    private func syncSubtasks(for parentTask: TaskItem) {
+        // 获取当前已存在的子任务
+        let existingChildTasks = taskStore.tasks.filter { $0.parentTaskId == parentTask.id }
+        let existingChildIds = Set(existingChildTasks.map { $0.id })
+
+        // 当前 UI 中的子任务 ID 集合（用于判断哪些是已有的）
+        let currentSubtaskIds = Set(parentTask.subTaskIds)
+
+        // 1. 删除已被用户移除的子任务
+        for childTask in existingChildTasks {
+            if !subtasks.contains(where: { $0.id == childTask.id }) {
+                // 该子任务在 UI 中已被移除，删除它
+                taskStore.deleteTask(id: childTask.id)
+                parentTask.removeSubTask(childTask.id)
+            }
+        }
+
+        // 2. 添加新增的子任务
+        for subtask in subtasks {
+            if !currentSubtaskIds.contains(subtask.id) && !existingChildIds.contains(subtask.id) {
+                // 这是新增的子任务
+                let childTask = TaskItem(
+                    title: subtask.title,
+                    parentTaskId: parentTask.id
+                )
+                if subtask.isCompleted {
+                    childTask.markAsCompleted()
+                }
+                taskStore.addTask(childTask)
+                parentTask.addSubTask(childTask.id)
+            } else if let existingChild = existingChildTasks.first(where: { $0.id == subtask.id }) {
+                // 更新已有子任务的标题和完成状态
+                existingChild.title = subtask.title
+                if subtask.isCompleted && !existingChild.isCompleted {
+                    existingChild.markAsCompleted()
+                } else if !subtask.isCompleted && existingChild.isCompleted {
+                    existingChild.markAsPending()
+                }
+                taskStore.updateTask(existingChild)
+            }
+        }
+    }
+
+    /// 加载已有子任务（编辑模式）
+    private func loadExistingSubtasks() {
+        guard let task = task else { return }
+        let childTasks = taskStore.tasks.filter { $0.parentTaskId == task.id }
+        subtasks = childTasks.map { Subtask(id: $0.id, title: $0.title, isCompleted: $0.isCompleted) }
+    }
+
+    /// 将用户选择的图片转换为 Attachment 并添加到任务
+    private func processAttachments(for targetTask: TaskItem) {
+        guard !selectedPhotos.isEmpty else { return }
+
+        for (index, photoItem) in selectedPhotos.enumerated() {
+            photoItem.loadTransferable(type: Data.self) { result in
+                DispatchQueue.main.async {
+                    if let data = try? result.get(), !data.isEmpty {
+                        let filename = "attachment_\(index + 1).jpg"
+                        let attachment = Attachment(filename: filename, data: data)
+                        targetTask.addAttachment(attachment)
+                    }
+                }
+            }
+        }
+    }
 
     private func addSubtask() {
         let trimmed = newSubtask.trimmingCharacters(in: .whitespaces)

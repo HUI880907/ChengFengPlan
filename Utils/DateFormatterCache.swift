@@ -51,6 +51,13 @@ final class DateFormatterCache {
         return formatter
     }()
 
+    let monthYearFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年MM月"
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter
+    }()
+
     // MARK: - Initialization
 
     private init() {}
@@ -78,9 +85,6 @@ final class DateFormatterCache {
 
     /// 获取月份年份字符串
     func monthYearString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年MM月"
-        formatter.locale = Locale(identifier: "zh_CN")
-        return formatter.string(from: date)
+        return monthYearFormatter.string(from: date)
     }
 }

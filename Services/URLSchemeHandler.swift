@@ -39,9 +39,12 @@ final class URLSchemeHandler {
     /// 格式: chengfengplan://task/{id}
     func parseTaskURL(url: URL) -> URLSchemeAction? {
         let components = url.pathComponents
+        // pathComponents 格式: ["/", "{uuid}"]
         guard components.count >= 2 else { return nil }
 
         let idString = components[1]
+        // 防止 idString 为 "/" (根路径) 的情况
+        guard !idString.isEmpty, idString != "/" else { return nil }
         guard let id = UUID(uuidString: idString) else { return nil }
 
         return .openTask(id: id)

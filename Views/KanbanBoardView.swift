@@ -44,12 +44,7 @@ struct KanbanBoardView: View {
     @Environment(TaskStore.self) private var taskStore
     @AppStorage("kanban_card_options") private var cardOptionsData: Data = Data()
     @State private var showingCardSettings = false
-
-    private var cardOptions: CardDisplayOptions {
-        get {
-            (try? JSONDecoder().decode(CardDisplayOptions.self, from: cardOptionsData)) ?? CardDisplayOptions()
-        }
-    }
+    @State private var cachedCardOptions: CardDisplayOptions = CardDisplayOptions()
 
     var body: some View {
         NavigationStack {
@@ -59,7 +54,7 @@ struct KanbanBoardView: View {
                         KanbanColumnView(
                             column: column,
                             tasks: taskStore.tasks.filter { $0.status == column.taskStatus },
-                            cardOptions: cardOptions,
+                            cardOptions: cachedCardOptions,
                             onDrop: { task in
                                 withAnimation {
                                     var updatedTask = task
@@ -92,6 +87,12 @@ struct KanbanBoardView: View {
             .sheet(isPresented: $showingCardSettings) {
                 CardSettingsView(cardOptionsData: $cardOptionsData)
             }
+            .onAppear {
+                cachedCardOptions = (try? JSONDecoder().decode(CardDisplayOptions.self, from: cardOptionsData)) ?? CardDisplayOptions()
+            }
+            .onChange(of: cardOptionsData) { _, newData in
+                cachedCardOptions = (try? JSONDecoder().decode(CardDisplayOptions.self, from: newData)) ?? CardDisplayOptions()
+            }
         }
     }
 }
@@ -103,6 +104,7 @@ struct KanbanColumnView: View {
     let tasks: [TaskItem]
     let cardOptions: CardDisplayOptions
     let onDrop: (TaskItem) -> Void
+    @State private var selectedTask: TaskItem?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -141,11 +143,21 @@ struct KanbanColumnView: View {
                         .padding(.vertical, 20)
                     } else {
                         ForEach(tasks) { task in
-                            KanbanCardView(task: task, options: cardOptions)
-                                .draggable(task.id.uuidString) {
-                                    KanbanCardView(task: task, options: cardOptions)
-                                        .frame(width: 200)
+                            KanbanCardView(
+                                task: task,
+                                options: cardOptions,
+                                onTap: {
+                                    selectedTask = task
                                 }
+                            )
+                            .draggable(task.id.uuidString) {
+                                KanbanCardView(
+                                    task: task,
+                                    options: cardOptions,
+                                    onTap: {}
+                                )
+                                .frame(width: 200)
+                            }
                         }
                     }
                 }
@@ -159,6 +171,9 @@ struct KanbanColumnView: View {
         .frame(width: 280)
         .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        .sheet(item: $selectedTask) { task in
+            TaskDetailView(task: task)
+        }
     }
 }
 
@@ -168,6 +183,7 @@ struct KanbanColumnView: View {
 struct KanbanCardView: View {
     @Bindable var task: TaskItem
     let options: CardDisplayOptions
+    let onTap: () -> Void
 
     @Environment(TaskStore.self) private var taskStore
 
@@ -177,49 +193,69 @@ struct KanbanCardView: View {
         }
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Title
-            Text(task.title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.primary)
-                .lineLimit(2)
+    /// 格式化日期范围：创建日期 - 截止日期
+    private var dateRangeText: String {
+        let startDate = DateFormatterCache.shared.format(task.createdAt, style: .medium)
+        if let dueDate = task.dueDate {
+            let endDate = DateFormatterCache.shared.format(dueDate, style: .medium)
+            return "\(startDate) - \(endDate)"
+        }
+        return startDate
+    }
 
-            // Description
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Row 1: Task title
+            HStack {
+                Text(task.title)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                
+                Spacer()
+                
+                // Priority badge (small, on the right)
+                if options.showPriority {
+                    Text(task.priority.displayName)
+                        .font(.caption2.bold())
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(task.priority.color.opacity(0.15))
+                        .foregroundStyle(task.priority.color)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.bottom, 6)
+
+            // Row 2: Task description (if not empty and enabled)
             if options.showDescription && !task.description.isEmpty {
                 Text(task.description)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+                    .padding(.bottom, 6)
             }
 
-            // Priority + Due Date
-            HStack {
-                if options.showPriority {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(task.priority.color)
-                            .frame(width: 6, height: 6)
-                        Text(task.priority.displayName)
+            // Row 3: Start date - End date
+            if options.showDueDate || options.showCreatedDate {
+                HStack(spacing: 4) {
+                    Image(systemName: "calendar")
+                        .font(.caption2)
+                        .foregroundStyle(task.isOverdue ? .red : .secondary)
+                    Text(dateRangeText)
+                        .font(.caption2)
+                        .foregroundStyle(task.isOverdue ? .red : .secondary)
+                    
+                    if task.isOverdue {
+                        Image(systemName: "exclamationmark.triangle.fill")
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.red)
                     }
                 }
-
-                if options.showDueDate, let dueDate = task.dueDate {
-                    Spacer()
-                    HStack(spacing: 2) {
-                        Image(systemName: task.isOverdue ? "calendar.badge.exclamationmark" : "calendar")
-                            .font(.caption2)
-                            .foregroundStyle(task.isOverdue ? .red : .secondary)
-                        Text(DateFormatterCache.shared.format(dueDate, style: .medium))
-                            .font(.caption2)
-                            .foregroundStyle(task.isOverdue ? .red : .secondary)
-                    }
-                }
+                .padding(.bottom, 6)
             }
 
-            // Tags
+            // Tags (if enabled and not empty)
             if options.showTags && !taskTags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 4) {
@@ -234,11 +270,12 @@ struct KanbanCardView: View {
                         }
                     }
                 }
+                .padding(.bottom, 4)
             }
 
-            // Subtasks indicator
+            // Subtasks indicator (if enabled and not empty)
             if options.showSubtasks && !task.subTaskIds.isEmpty {
-                HStack(spacing: 2) {
+                HStack(spacing: 4) {
                     Image(systemName: "list.bullet.indent")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -253,6 +290,9 @@ struct KanbanCardView: View {
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .onTapGesture {
+            onTap()
+        }
     }
 }
 

@@ -4,6 +4,43 @@ import Foundation
 import ZIPFoundation
 #endif
 
+// MARK: - FileSyncError
+
+enum FileSyncError: LocalizedError {
+    case exportFailed(String)
+    case importFailed(String)
+    case invalidFileFormat
+    case fileNotAccessible
+    case encodingFailed
+    case decodingFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .exportFailed(let msg):
+            return "导出失败: \(msg)"
+        case .importFailed(let msg):
+            return "导入失败: \(msg)"
+        case .invalidFileFormat:
+            return "文件格式无效，请确保选择正确的 JSON 导出文件"
+        case .fileNotAccessible:
+            return "无法访问文件，请检查文件权限"
+        case .encodingFailed:
+            return "数据编码失败"
+        case .decodingFailed:
+            return "数据解码失败，文件可能已损坏"
+        }
+    }
+}
+
+// MARK: - ImportResult
+
+struct ImportResult {
+    let tasks: [TaskItem]
+    let tags: [TaskTag]
+    let taskCount: Int
+    let tagCount: Int
+}
+
 // MARK: - FileSyncManager
 
 /// 文件同步与备份管理器
@@ -30,44 +67,123 @@ final class FileSyncManager {
         fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
 
+    /// 导出文件存放目录（iOS 文件 App 可见）
+    private var exportsDirectoryURL: URL {
+        let url = documentsURL.appendingPathComponent("Exports", isDirectory: true)
+        // 设置目录为共享可见，使文件 App 可以访问
+        return url
+    }
+
     // MARK: - Initialization
 
-    private init() {}
+    private init() {
+        createExportsDirectoryIfNeeded()
+    }
 
     // MARK: - Export
 
     /// 导出任务和标签到指定 URL
-    func exportToURL(tasks: [TaskItem], tags: [TaskTag]) async -> URL? {
+    /// - Returns: 导出的文件 URL（位于 App Documents/Exports 目录下）
+    func exportToURL(tasks: [TaskItem], tags: [TaskTag]) async throws -> URL {
         await MainActor.run { isExporting = true }
         defer { Task { @MainActor in isExporting = false } }
 
         let container = ExportContainer(tasks: tasks, tags: tags, exportDate: Date())
 
         do {
-            let data = try JSONEncoder().encode(container)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(container)
+
             let filename = "ChengFengPlan_Export_\(dateString()).json"
-            let url = documentsURL.appendingPathComponent(filename)
+            let url = exportsDirectoryURL.appendingPathComponent(filename)
+
+            // 确保目录存在
+            createExportsDirectoryIfNeeded()
+
+            // 原子写入
             try data.write(to: url, options: .atomic)
+
+            // 设置文件属性，使其在 iOS 文件 App 中可见
+            try? fileManager.setAttributes(
+                [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+                ofItemAtPath: url.path
+            )
+
             await MainActor.run { lastBackupURL = url }
             return url
+        } catch let error as FileSyncError {
+            throw error
         } catch {
-            await MainActor.run { lastError = "导出失败: \(error.localizedDescription)" }
-            return nil
+            throw FileSyncError.exportFailed(error.localizedDescription)
         }
     }
 
     /// 从 URL 导入数据
-    func importFromURL(_ url: URL) async -> (tasks: [TaskItem], tags: [TaskTag])? {
+    /// - Parameter url: 用户选择的 JSON 文件 URL（可能是安全沙盒临时 URL）
+    /// - Returns: 导入结果，包含任务和标签列表
+    func importFromURL(_ url: URL) async throws -> ImportResult {
         await MainActor.run { isImporting = true }
         defer { Task { @MainActor in isImporting = false } }
 
+        // 确保可以访问文件（处理安全沙盒临时文件）
+        let accessibleURL: URL
+        let didStartAccessing = url.startAccessingSecurityScopedResource()
+        if didStartAccessing {
+            accessibleURL = url
+        } else {
+            // 尝试复制到临时目录
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension("json")
+            do {
+                try FileManager.default.copyItem(at: url, to: tempURL)
+                accessibleURL = tempURL
+            } catch {
+                throw FileSyncError.fileNotAccessible
+            }
+        }
+
+        defer {
+            if didStartAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
         do {
-            let data = try Data(contentsOf: url)
-            let container = try JSONDecoder().decode(ExportContainer.self, from: data)
-            return (container.tasks, container.tags)
+            let data = try Data(contentsOf: accessibleURL)
+
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let container = try decoder.decode(ExportContainer.self, from: data)
+
+            // 验证数据
+            guard !container.tasks.isEmpty || !container.tags.isEmpty else {
+                throw FileSyncError.invalidFileFormat
+            }
+
+            // 清理临时文件
+            if accessibleURL != url {
+                try? fileManager.removeItem(at: accessibleURL)
+            }
+
+            return ImportResult(
+                tasks: container.tasks,
+                tags: container.tags,
+                taskCount: container.tasks.count,
+                tagCount: container.tags.count
+            )
+        } catch let error as FileSyncError {
+            throw error
+        } catch DecodingError.dataCorrupted(let context) {
+            throw FileSyncError.decodingFailed
+        } catch DecodingError.keyNotFound(_, let context) {
+            throw FileSyncError.invalidFileFormat
+        } catch DecodingError.typeMismatch(_, let context) {
+            throw FileSyncError.invalidFileFormat
         } catch {
-            await MainActor.run { lastError = "导入失败: \(error.localizedDescription)" }
-            return nil
+            throw FileSyncError.importFailed(error.localizedDescription)
         }
     }
 
@@ -77,12 +193,12 @@ final class FileSyncManager {
     func getBackupFiles() -> [URL] {
         do {
             let files = try fileManager.contentsOfDirectory(
-                at: documentsURL,
+                at: exportsDirectoryURL,
                 includingPropertiesForKeys: [.contentModificationDateKey],
                 options: .skipsHiddenFiles
             )
             return files
-                .filter { $0.lastPathComponent.hasPrefix("ChengFengPlan_Export_") }
+                .filter { $0.lastPathComponent.hasPrefix("ChengFengPlan_Export_") && $0.pathExtension == "json" }
                 .sorted {
                     let d1 = (try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date.distantPast
                     let d2 = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? Date.distantPast
@@ -94,8 +210,8 @@ final class FileSyncManager {
     }
 
     /// 从备份文件恢复
-    func restoreFromBackup(url: URL) async -> (tasks: [TaskItem], tags: [TaskTag])? {
-        await importFromURL(url)
+    func restoreFromBackup(url: URL) async throws -> ImportResult {
+        try await importFromURL(url)
     }
 
     // MARK: - ZIP Archive
@@ -135,6 +251,16 @@ final class FileSyncManager {
     }
 
     // MARK: - Private Helpers
+
+    private func createExportsDirectoryIfNeeded() {
+        if !fileManager.fileExists(atPath: exportsDirectoryURL.path) {
+            try? fileManager.createDirectory(
+                at: exportsDirectoryURL,
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+        }
+    }
 
     private func dateString() -> String {
         let formatter = DateFormatter()

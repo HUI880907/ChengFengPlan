@@ -11,6 +11,7 @@ struct ChengFengPlanApp: App {
     @State private var trashManager = TrashManager.shared
     @State private var pomodoroManager = PomodoroManager.shared
     @State private var moodTracker = MoodTracker.shared
+    @State private var fileSyncManager = FileSyncManager.shared
     @State private var showingErrorAlert = false
     @State private var errorMessage = ""
     
@@ -35,6 +36,7 @@ struct ChengFengPlanApp: App {
                 .environment(trashManager)
                 .environment(pomodoroManager)
                 .environment(moodTracker)
+                .environment(fileSyncManager)
                 .alert("错误", isPresented: $showingErrorAlert) {
                     Button("确定", role: .cancel) {}
                 } message: {

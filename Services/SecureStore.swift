@@ -89,7 +89,7 @@ final class SecureStore {
     @discardableResult
     func saveInt(key: String, value: Int) -> Bool {
         var intValue = value
-        let data = Data(bytes: &intValue, count: MemoryLayout<Int>.size)
+        let data = withUnsafeBytes(of: &intValue) { Data($0) }
         return save(key: key, data: data)
     }
 
@@ -105,7 +105,7 @@ final class SecureStore {
     @discardableResult
     func saveBool(key: String, value: Bool) -> Bool {
         var boolValue = value
-        let data = Data(bytes: &boolValue, count: MemoryLayout<Bool>.size)
+        let data = withUnsafeBytes(of: &boolValue) { Data($0) }
         return save(key: key, data: data)
     }
 
@@ -122,7 +122,7 @@ final class SecureStore {
     func saveDate(key: String, value: Date) -> Bool {
         let timeInterval = value.timeIntervalSince1970
         var intervalValue = timeInterval
-        let data = Data(bytes: &intervalValue, count: MemoryLayout<TimeInterval>.size)
+        let data = withUnsafeBytes(of: &intervalValue) { Data($0) }
         return save(key: key, data: data)
     }
 
@@ -139,7 +139,7 @@ final class SecureStore {
     @discardableResult
     func saveDouble(key: String, value: Double) -> Bool {
         var doubleValue = value
-        let data = Data(bytes: &doubleValue, count: MemoryLayout<Double>.size)
+        let data = withUnsafeBytes(of: &doubleValue) { Data($0) }
         return save(key: key, data: data)
     }
 

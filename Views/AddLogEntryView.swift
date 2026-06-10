@@ -7,6 +7,7 @@ import SwiftUI
 
 struct AddLogEntryView: View {
     @Environment(\.dismiss) private var dismiss
+    @Bindable var task: TaskItem
     @State private var content = ""
     @State private var selectedType: LogEntry.LogType = .progress
     @FocusState private var isContentFocused: Bool
@@ -69,7 +70,9 @@ struct AddLogEntryView: View {
     private func saveLog() {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        // 保存日志逻辑
+
+        let entry = LogEntry(content: trimmed, type: selectedType)
+        task.addLogEntry(entry)
         dismiss()
     }
 }
@@ -77,5 +80,5 @@ struct AddLogEntryView: View {
 // MARK: - Preview
 
 #Preview {
-    AddLogEntryView()
+    AddLogEntryView(task: TaskItem(title: "示例任务"))
 }
