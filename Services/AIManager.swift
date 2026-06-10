@@ -82,9 +82,10 @@ final class AIManager {
         }
         let cacheKey = "\(provider.rawValue)_\(prompt)" as NSString
 
-        if let cachedResponse = await MainActor.run {
+        let cachedResponse = await MainActor.run {
             AIManager.shared.cache.object(forKey: cacheKey)
-        } {
+        }
+        if let cachedResponse = cachedResponse {
             return cachedResponse
         }
 
