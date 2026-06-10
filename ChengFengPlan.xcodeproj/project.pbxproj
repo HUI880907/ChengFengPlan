@@ -41,6 +41,7 @@
 		B1000020 /* DateFormatterCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000020 /* DateFormatterCache.swift */; };
 		B1000021 /* ColorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000021 /* ColorExtensions.swift */; };
 		B1000022 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B2000023 /* Assets.xcassets */; };
+		B1000024 /* BackupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000024 /* BackupManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -80,6 +81,7 @@
 		B2000021 /* ColorExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtensions.swift; sourceTree = "<group>"; };
 		B2000022 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B2000023 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B2000024 /* BackupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,6 +159,7 @@
 				B200001B /* DailyBriefingService.swift */,
 				B200001C /* NotificationScheduler.swift */,
 				B200001D /* URLSchemeHandler.swift */,
+				B2000024 /* BackupManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -293,6 +296,7 @@
 				B100001F /* DateRangeCalculator.swift in Sources */,
 				B1000020 /* DateFormatterCache.swift in Sources */,
 				B1000021 /* ColorExtensions.swift in Sources */,
+				B1000024 /* BackupManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
