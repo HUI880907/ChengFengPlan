@@ -40,8 +40,8 @@ enum AIProvider: String, Codable, CaseIterable, Identifiable {
 
 // MARK: - AIResponse
 
-/// AI 响应结构体
-struct AIResponse: Sendable {
+/// AI 响应类
+final class AIResponse: NSObject, Sendable {
     let content: String
     let isSuccess: Bool
     let errorMessage: String?
@@ -50,6 +50,7 @@ struct AIResponse: Sendable {
         self.content = content
         self.isSuccess = isSuccess
         self.errorMessage = errorMessage
+        super.init()
     }
 
     static func failure(_ message: String) -> AIResponse {

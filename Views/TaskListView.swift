@@ -175,6 +175,7 @@ struct TaskListView: View {
 
     // MARK: - Batch Actions
 
+    @MainActor
     private func batchMarkCompleted() {
         for id in selectedTaskIds {
             taskStore.toggleTaskCompletion(id: id)
@@ -182,6 +183,7 @@ struct TaskListView: View {
         cancelMultiSelect()
     }
 
+    @MainActor
     private func batchDelete() {
         for id in selectedTaskIds {
             taskStore.deleteTask(id: id)
@@ -189,6 +191,7 @@ struct TaskListView: View {
         cancelMultiSelect()
     }
 
+    @MainActor
     private func batchChangePriority(to priority: TaskPriority) {
         for id in selectedTaskIds {
             if let index = taskStore.tasks.firstIndex(where: { $0.id == id }) {
@@ -196,7 +199,9 @@ struct TaskListView: View {
                 taskStore.tasks[index].updatedAt = Date()
             }
         }
-        taskStore.scheduleSave()
+        Task { @MainActor in
+            taskStore.saveTasks()
+        }
         cancelMultiSelect()
     }
 
@@ -306,16 +311,7 @@ struct PriorityPickerSheet: View {
 
 // MARK: - TaskPriority Color Extension
 
-extension TaskPriority {
-    var color: Color {
-        switch self {
-        case .low: return .priorityLow
-        case .medium: return .priorityMedium
-        case .high: return .priorityHigh
-        case .urgent: return .priorityUrgent
-        }
-    }
-}
+
 
 // MARK: - TaskRowView
 

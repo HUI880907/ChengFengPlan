@@ -234,6 +234,7 @@ struct AddEditTaskView: View {
 
     // MARK: - Methods
 
+    @MainActor
     private func saveTask() {
         if let existingTask = task {
             // 编辑已有任务
@@ -281,6 +282,7 @@ struct AddEditTaskView: View {
     }
 
     /// 同步子任务（编辑模式）：对比现有子任务和当前 subtasks 数组
+    @MainActor
     private func syncSubtasks(for parentTask: TaskItem) {
         // 获取当前已存在的子任务
         let existingChildTasks = taskStore.tasks.filter { $0.parentTaskId == parentTask.id }
@@ -325,6 +327,7 @@ struct AddEditTaskView: View {
     }
 
     /// 加载已有子任务（编辑模式）
+    @MainActor
     private func loadExistingSubtasks() {
         guard let task = task else { return }
         let childTasks = taskStore.tasks.filter { $0.parentTaskId == task.id }

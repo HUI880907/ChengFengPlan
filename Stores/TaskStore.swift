@@ -239,32 +239,28 @@ final class TaskStore {
 
     /// 保存任务到 JSON 文件（原子写入）
     nonisolated func saveTasks() async {
+        let data = await MainActor.run {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let container = TaskStoreData(tasks: self.tasks, tags: self.tags)
+            return try? encoder.encode(container)
+        }
+
+        guard let encoded = data else { return }
+
+        let url = await MainActor.run { self.tasksURL }
+        let tempURL = url.deletingLastPathComponent()
+            .appendingPathComponent("ChengFengPlan_Tasks_temp.json")
+
         await withCheckedContinuation { continuation in
             persistenceQueue.async {
-                let data = await MainActor.run {
-                    let encoder = JSONEncoder()
-                    encoder.dateEncodingStrategy = .iso8601
-                    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                    let container = TaskStoreData(tasks: self.tasks, tags: self.tags)
-                    return try? encoder.encode(container)
-                }
-
-                guard let encoded = data else {
-                    continuation.resume()
-                    return
-                }
-
-                let url = await MainActor.run { self.tasksURL }
-                let tempURL = url.deletingLastPathComponent()
-                    .appendingPathComponent("ChengFengPlan_Tasks_temp.json")
-
                 do {
                     try encoded.write(to: tempURL, options: .atomic)
                     _ = try FileManager.default.replaceItemAt(url, withItemAt: tempURL)
                 } catch {
                     print("[TaskStore] Save error: \(error.localizedDescription)")
                 }
-
                 continuation.resume()
             }
         }
@@ -272,27 +268,23 @@ final class TaskStore {
 
     /// 从 JSON 文件加载任务
     func loadTasks() async {
-        await withCheckedContinuation { continuation in
+        let url = tasksURL
+        let (loadedTasks, loadedTags): ([TaskItem], [TaskTag]) = await withCheckedContinuation { continuation in
             persistenceQueue.async {
                 do {
-                    let data = try Data(contentsOf: self.tasksURL)
+                    let data = try Data(contentsOf: url)
                     let decoder = JSONDecoder()
                     decoder.dateDecodingStrategy = .iso8601
                     let container = try decoder.decode(TaskStoreData.self, from: data)
-                    await MainActor.run {
-                        self.tasks = container.tasks
-                        self.tags = container.tags
-                    }
+                    continuation.resume(returning: (container.tasks, container.tags))
                 } catch {
                     print("[TaskStore] Load error: \(error.localizedDescription)")
-                    await MainActor.run {
-                        self.tasks = []
-                        self.tags = []
-                    }
+                    continuation.resume(returning: ([], []))
                 }
-                continuation.resume()
             }
         }
+        self.tasks = loadedTasks
+        self.tags = loadedTags
     }
 
     /// 自动备份恢复
@@ -337,8 +329,8 @@ final class TaskStore {
     // MARK: - Private Helpers
 
     /// 线程安全包装器：所有可变操作在此闭包中执行，完成后自动触发保存
-    private func modifyTasks(_ operation: (inout [TaskItem]) -> Void) {
-        operation(&tasks)
+    private func modifyTasks(_ operation: () -> Void) {
+        operation()
         scheduleSave()
     }
 

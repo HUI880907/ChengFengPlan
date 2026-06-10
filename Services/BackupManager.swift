@@ -124,52 +124,46 @@ final class BackupManager {
 
     /// 执行立即备份
     func performBackup() async throws -> URL {
-        try await withCheckedThrowingContinuation { continuation in
-            backupQueue.async {
-                Task { @MainActor in
-                    self.isBackingUp = true
-                }
-                defer {
-                    Task { @MainActor in
-                        self.isBackingUp = false
-                    }
-                }
+        isBackingUp = true
+        defer { isBackingUp = false }
 
-                self.createBackupDirectoryIfNeeded()
-
-                let timestamp = self.dateString()
-                let backupFilename = "ChengFengPlan_Backup_\(timestamp).json"
-                let backupURL = self.backupDirectoryURL.appendingPathComponent(backupFilename)
-
-                // 读取当前任务数据
-                let taskStore = await TaskStore.shared
-                let container = BackupContainer(
-                    tasks: await MainActor.run { taskStore.tasks },
-                    tags: await MainActor.run { taskStore.tags },
-                    backupDate: Date(),
-                    appVersion: self.appVersion()
-                )
-
-                do {
-                    let encoder = JSONEncoder()
-                    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                    encoder.dateEncodingStrategy = .iso8601
-                    let data = try encoder.encode(container)
-                    try data.write(to: backupURL, options: .atomic)
-
-                    await MainActor.run {
-                        self.settings.lastBackupDate = Date()
-                    }
-
-                    // 清理旧备份
-                    self.cleanupOldBackups()
-
-                    continuation.resume(returning: backupURL)
-                } catch {
-                    continuation.resume(throwing: FileSyncError.exportFailed(error.localizedDescription))
-                }
+        return try await Task.detached(priority: .background) { [weak self] in
+            guard let self else {
+                throw FileSyncError.exportFailed("BackupManager 已释放")
             }
-        }
+
+            await self.createBackupDirectoryIfNeeded()
+
+            let timestamp = await self.dateString()
+            let backupFilename = "ChengFengPlan_Backup_\(timestamp).json"
+            let backupURL = await self.backupDirectoryURL.appendingPathComponent(backupFilename)
+
+            // 读取当前任务数据
+            let taskStore = await TaskStore.shared
+            let tasks = await taskStore.tasks
+            let tags = await taskStore.tags
+            let container = BackupContainer(
+                tasks: tasks,
+                tags: tags,
+                backupDate: Date(),
+                appVersion: await self.appVersion()
+            )
+
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(container)
+            try data.write(to: backupURL, options: .atomic)
+
+            await MainActor.run {
+                self.settings.lastBackupDate = Date()
+            }
+
+            // 清理旧备份
+            await self.cleanupOldBackups()
+
+            return backupURL
+        }.value
     }
 
     /// 获取所有备份记录
@@ -196,25 +190,18 @@ final class BackupManager {
 
     /// 从备份恢复
     func restoreFromBackup(url: URL) async throws -> ImportResult {
-        try await withCheckedThrowingContinuation { continuation in
-            backupQueue.async {
-                do {
-                    let data = try Data(contentsOf: url)
-                    let decoder = JSONDecoder()
-                    decoder.dateDecodingStrategy = .iso8601
-                    let container = try decoder.decode(BackupContainer.self, from: data)
-                    let result = ImportResult(
-                        tasks: container.tasks,
-                        tags: container.tags,
-                        taskCount: container.tasks.count,
-                        tagCount: container.tags.count
-                    )
-                    continuation.resume(returning: result)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+        try await Task.detached(priority: .background) {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let container = try decoder.decode(BackupContainer.self, from: data)
+            return ImportResult(
+                tasks: container.tasks,
+                tags: container.tags,
+                taskCount: container.tasks.count,
+                tagCount: container.tags.count
+            )
+        }.value
     }
 
     /// 删除指定备份
@@ -262,9 +249,10 @@ final class BackupManager {
         }
 
         backupTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            guard let self else { return }
             Task { @MainActor in
-                try? await self?.performBackup()
-                self?.scheduleNextBackup()
+                try? await self.performBackup()
+                self.scheduleNextBackup()
             }
         }
     }

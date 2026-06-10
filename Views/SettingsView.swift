@@ -492,6 +492,7 @@ struct SettingsView: View {
 
 // MARK: - BackupSettingsView
 
+@MainActor
 struct BackupSettingsView: View {
     @State private var settings: BackupSettings
     @State private var showingBackupNowAlert = false
@@ -573,10 +574,14 @@ struct BackupSettingsView: View {
         .navigationTitle("自动备份")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            refreshBackupRecords()
+            Task { @MainActor in
+                refreshBackupRecords()
+            }
         }
         .onChange(of: settings) { _, newValue in
-            BackupManager.shared.settings = newValue
+            Task { @MainActor in
+                BackupManager.shared.settings = newValue
+            }
         }
         .alert("确认立即备份", isPresented: $showingBackupNowAlert) {
             Button("取消", role: .cancel) {}
@@ -603,10 +608,12 @@ struct BackupSettingsView: View {
         }
     }
 
+    @MainActor
     private func refreshBackupRecords() {
         backupRecords = BackupManager.shared.getBackupRecords()
     }
 
+    @MainActor
     private func deleteBackup(at offsets: IndexSet) {
         for index in offsets {
             let record = backupRecords[index]
@@ -1054,6 +1061,7 @@ struct ImportDataView: View {
         }
     }
 
+    @MainActor
     private func applyImport(_ result: ImportResult) {
         let existingTagIds = Set(taskStore.tags.map { $0.id })
         let newTags = result.tags.filter { !existingTagIds.contains($0.id) }
@@ -1069,7 +1077,7 @@ struct ImportDataView: View {
         }
         taskStore.tasks.append(contentsOf: newTasks)
 
-        Task {
+        Task { @MainActor in
             await taskStore.saveTasks()
         }
 

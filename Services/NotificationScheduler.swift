@@ -91,34 +91,28 @@ final class NotificationScheduler {
         guard let reminderDate = task.reminderDate else { return }
         guard reminderDate > Date() else { return }
 
-        await withCheckedContinuation { continuation in
-            queue.async {
-                let content = UNMutableNotificationContent()
-                content.title = "乘风计划"
-                content.body = "任务提醒: \(task.title)"
-                content.sound = .default
-                content.badge = NSNumber(value: await self.pendingNotificationCount())
-                content.userInfo = [
-                    "taskId": task.id.uuidString,
-                    "taskTitle": task.title,
-                    "scheduledAt": ISO8601DateFormatter().string(from: Date())
-                ]
+        let content = UNMutableNotificationContent()
+        content.title = "乘风计划"
+        content.body = "任务提醒: \(task.title)"
+        content.sound = .default
+        content.badge = NSNumber(value: await pendingNotificationCount())
+        content.userInfo = [
+            "taskId": task.id.uuidString,
+            "taskTitle": task.title,
+            "scheduledAt": ISO8601DateFormatter().string(from: Date())
+        ]
 
-                let calendar = Calendar.current
-                let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: reminderDate)
-                let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: reminderDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
 
-                let identifier = self.notificationIdentifier(for: task.id)
-                let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        let identifier = notificationIdentifier(for: task.id)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
 
-                do {
-                    try await self.notificationCenter.add(request)
-                } catch {
-                    print("[NotificationScheduler] Schedule error: \(error.localizedDescription)")
-                }
-
-                continuation.resume()
-            }
+        do {
+            try await notificationCenter.add(request)
+        } catch {
+            print("[NotificationScheduler] Schedule error: \(error.localizedDescription)")
         }
     }
 
@@ -139,31 +133,25 @@ final class NotificationScheduler {
 
     /// 设置每日提醒
     func scheduleDailyReminder(time: Date) async {
-        await withCheckedContinuation { continuation in
-            queue.async {
-                let content = UNMutableNotificationContent()
-                content.title = "乘风计划"
-                content.body = "查看今日任务，开启高效的一天！"
-                content.sound = .default
+        let content = UNMutableNotificationContent()
+        content.title = "乘风计划"
+        content.body = "查看今日任务，开启高效的一天！"
+        content.sound = .default
 
-                let calendar = Calendar.current
-                let components = calendar.dateComponents([.hour, .minute], from: time)
-                let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.hour, .minute], from: time)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
 
-                let request = UNNotificationRequest(
-                    identifier: "daily_reminder",
-                    content: content,
-                    trigger: trigger
-                )
+        let request = UNNotificationRequest(
+            identifier: "daily_reminder",
+            content: content,
+            trigger: trigger
+        )
 
-                do {
-                    try await self.notificationCenter.add(request)
-                } catch {
-                    print("[NotificationScheduler] Daily reminder error: \(error.localizedDescription)")
-                }
-
-                continuation.resume()
-            }
+        do {
+            try await notificationCenter.add(request)
+        } catch {
+            print("[NotificationScheduler] Daily reminder error: \(error.localizedDescription)")
         }
     }
 

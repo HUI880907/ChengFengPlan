@@ -357,7 +357,7 @@ struct AIAssistantView: View {
     private func findTaskByKeyword(in text: String) -> TaskItem? {
         // 提取引号内的内容或"xxx任务"中的xxx
         let patterns = [
-            "「([^」]+)"",
+            "「([^」]+)」",
             "\\\"([^\"]+)\\\"",
             "'([^']+)'",
             "《([^》]+)》",
@@ -443,9 +443,8 @@ struct AIAssistantView: View {
                 if hourOffset == 12 && hour < 12 {
                     adjustedHour = hour + 12
                 }
-                if let baseDate = dueDate ?? calendar.startOfDay(for: now) {
-                    dueDate = calendar.date(bySettingHour: adjustedHour, minute: 0, second: 0, of: baseDate)
-                }
+                let baseDate = dueDate ?? calendar.startOfDay(for: now)
+                dueDate = calendar.date(bySettingHour: adjustedHour, minute: 0, second: 0, of: baseDate)
                 title = title.replacingOccurrences(of: String(text[Range(match.range(at: 0), in: text)!]), with: "")
                 break
             }
@@ -458,9 +457,8 @@ struct AIAssistantView: View {
            let minuteRange = Range(minuteMatch.range(at: 2), in: text),
            let hour = Int(text[hourRange]),
            let minute = Int(text[minuteRange]) {
-            if let baseDate = dueDate ?? calendar.startOfDay(for: now) {
-                dueDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: baseDate)
-            }
+            let baseDate = dueDate ?? calendar.startOfDay(for: now)
+            dueDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: baseDate)
         }
 
         // 解析地点（在xxx）

@@ -142,7 +142,7 @@ struct DailyBriefingView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: 20) {
                     Text("今日简报")
                         .font(.largeTitle.bold())

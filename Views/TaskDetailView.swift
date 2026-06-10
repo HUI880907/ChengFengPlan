@@ -6,6 +6,7 @@ import QuickLook
 
 // MARK: - TaskDetailView
 
+@MainActor
 struct TaskDetailView: View {
     @Bindable var task: TaskItem
     @State private var showingEditTask = false
