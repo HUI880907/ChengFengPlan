@@ -23,7 +23,7 @@ enum BackupFrequency: String, Codable, CaseIterable, Identifiable {
 
 // MARK: - BackupSettings
 
-struct BackupSettings: Codable {
+struct BackupSettings: Codable, Equatable {
     var isEnabled: Bool
     var frequency: BackupFrequency
     var backupTime: Date

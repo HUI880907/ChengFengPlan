@@ -200,7 +200,7 @@ struct TaskListView: View {
             }
         }
         Task { @MainActor in
-            taskStore.saveTasks()
+            await taskStore.saveTasks()
         }
         cancelMultiSelect()
     }
@@ -216,7 +216,9 @@ struct TaskListView: View {
                     title: "完成",
                     color: .green
                 ) {
-                    batchMarkCompleted()
+                    Task { @MainActor in
+                        batchMarkCompleted()
+                    }
                 }
 
                 BatchActionButton(
@@ -224,7 +226,9 @@ struct TaskListView: View {
                     title: "删除",
                     color: .red
                 ) {
-                    batchDelete()
+                    Task { @MainActor in
+                        batchDelete()
+                    }
                 }
 
                 BatchActionButton(
