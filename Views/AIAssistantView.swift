@@ -74,6 +74,11 @@ struct AIAssistantView: View {
                         }
                         .padding(.vertical)
                     }
+                    .onTapGesture {
+                        if isInputFocused {
+                            isInputFocused = false
+                        }
+                    }
                     .onChange(of: messages.count) { _, _ in
                         if let last = messages.last {
                             withAnimation {
@@ -164,36 +169,46 @@ struct AIAssistantView: View {
     // MARK: - Quick Actions
 
     private var quickActions: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                QuickActionButton(title: "分析任务", icon: "chart.bar") {
-                    sendQuickMessage("请分析我的任务")
+        VStack(alignment: .leading, spacing: 10) {
+            Text("快捷指令")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 16)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    QuickActionButton(title: "分析任务", icon: "chart.bar", color: .blue) {
+                        sendQuickMessage("请分析我的任务")
+                    }
+                    QuickActionButton(title: "建议任务", icon: "lightbulb", color: .orange) {
+                        sendQuickMessage("请给我一些任务建议")
+                    }
+                    QuickActionButton(title: "总结今天", icon: "calendar.badge.clock", color: .green) {
+                        sendQuickMessage("请总结我今天的工作")
+                    }
+                    QuickActionButton(title: "优化计划", icon: "arrow.triangle.2.circlepath", color: .purple) {
+                        sendQuickMessage("请帮我优化任务计划")
+                    }
+                    QuickActionButton(title: "时间管理", icon: "clock", color: .indigo) {
+                        sendQuickMessage("请给我一些时间管理建议")
+                    }
+                    QuickActionButton(title: "周报生成", icon: "doc.text", color: .teal) {
+                        sendQuickMessage("请帮我生成本周工作周报")
+                    }
+                    QuickActionButton(title: "逾期分析", icon: "exclamationmark.triangle", color: .red) {
+                        sendQuickMessage("请分析我的逾期任务")
+                    }
+                    QuickActionButton(title: "专注建议", icon: "brain.head.profile", color: .pink) {
+                        sendQuickMessage("请给我提高专注力的建议")
+                    }
                 }
-                QuickActionButton(title: "建议任务", icon: "lightbulb") {
-                    sendQuickMessage("请给我一些任务建议")
-                }
-                QuickActionButton(title: "总结今天", icon: "calendar.badge.clock") {
-                    sendQuickMessage("请总结我今天的工作")
-                }
-                QuickActionButton(title: "优化计划", icon: "arrow.triangle.2.circlepath") {
-                    sendQuickMessage("请帮我优化任务计划")
-                }
-                QuickActionButton(title: "时间管理", icon: "clock") {
-                    sendQuickMessage("请给我一些时间管理建议")
-                }
-                QuickActionButton(title: "周报生成", icon: "doc.text") {
-                    sendQuickMessage("请帮我生成本周工作周报")
-                }
-                QuickActionButton(title: "逾期分析", icon: "exclamationmark.triangle") {
-                    sendQuickMessage("请分析我的逾期任务")
-                }
-                QuickActionButton(title: "专注建议", icon: "brain.head.profile") {
-                    sendQuickMessage("请给我提高专注力的建议")
-                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 4)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
         }
+        .padding(.vertical, 8)
+        .background(Color(.systemGray6).opacity(0.5))
     }
 
     // MARK: - Input Bar
@@ -201,7 +216,10 @@ struct AIAssistantView: View {
     private var inputBar: some View {
         HStack(spacing: 12) {
             TextField("输入消息...", text: $inputText, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .lineLimit(1...5)
                 .focused($isInputFocused)
 
@@ -209,13 +227,28 @@ struct AIAssistantView: View {
                 sendMessage()
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
-                    .font(.title2)
+                    .font(.system(size: 32))
                     .foregroundStyle(inputText.isEmpty ? .secondary : Color.themePrimary)
+                    .background(
+                        Circle()
+                            .fill(Color(.systemBackground))
+                            .frame(width: 30, height: 30)
+                    )
             }
             .disabled(inputText.isEmpty || isLoading)
+            .buttonStyle(.plain)
         }
-        .padding()
-        .background(Color(.systemBackground))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(
+            Color(.systemBackground)
+                .shadow(
+                    color: Color.black.opacity(0.06),
+                    radius: 8,
+                    x: 0,
+                    y: -3
+                )
+        )
     }
 
     // MARK: - Methods
@@ -499,8 +532,20 @@ struct AIAssistantView: View {
         return ParsedTaskInfo(title: title, dueDate: dueDate, location: location, description: description)
     }
 
+    /// 查询/总结类关键词，不应触发任务创建
+    private var queryKeywords: [String] {
+        ["周报", "总结", "分析", "建议", "优化", "时间管理", "逾期", "专注"]
+    }
+
     /// 从 AI 响应中解析任务创建意图
     private func parseTaskFromAIResponse(_ response: String, originalInput: String) -> ParsedTaskInfo? {
+        // 如果原始输入包含查询类关键词，不解析为创建任务
+        let lowerInput = originalInput.lowercased()
+        let isQueryIntent = queryKeywords.contains { lowerInput.contains($0) }
+        if isQueryIntent {
+            return nil
+        }
+
         let createIndicators = ["已创建", "已设置", "已添加", "已安排", "已为您创建", "已帮您设置"]
         let hasCreateIndicator = createIndicators.contains { response.contains($0) }
 
@@ -764,9 +809,23 @@ struct MessageBubble: View {
     }
 
     var body: some View {
-        HStack {
+        HStack(alignment: .bottom, spacing: 8) {
             if isUser {
                 Spacer()
+            } else {
+                // AI 头像
+                Image(systemName: "sparkles")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.themePrimary, Color.themePrimary.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .clipShape(Circle())
             }
 
             VStack(alignment: isUser ? .trailing : .leading, spacing: 4) {
@@ -774,9 +833,26 @@ struct MessageBubble: View {
                     .font(.body)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(isUser ? Color.themePrimary : Color(.systemGray5))
+                    .background(
+                        isUser
+                        ? Color.themePrimary
+                        : Color(.systemGray6)
+                    )
                     .foregroundStyle(isUser ? .white : .primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .clipShape(
+                        RoundedRectangle(
+                            cornerRadius: 18,
+                            style: .continuous
+                        )
+                    )
+                    .shadow(
+                        color: isUser
+                            ? Color.themePrimary.opacity(0.25)
+                            : Color.black.opacity(0.04),
+                        radius: isUser ? 6 : 2,
+                        x: 0,
+                        y: isUser ? 3 : 1
+                    )
 
                 Text(DateFormatterCache.shared.format(message.timestamp, style: .time))
                     .font(.caption2)
@@ -784,11 +860,17 @@ struct MessageBubble: View {
                     .padding(.horizontal, 4)
             }
 
-            if !isUser {
+            if isUser {
+                // 用户头像
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(Color.themePrimary.opacity(0.8))
+            } else {
                 Spacer()
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 2)
     }
 }
 
@@ -797,22 +879,30 @@ struct MessageBubble: View {
 struct QuickActionButton: View {
     let title: String
     let icon: String
+    var color: Color = Color.themePrimary
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.caption)
+                    .font(.system(size: 14, weight: .medium))
                 Text(title)
-                    .font(.caption)
+                    .font(.system(size: 13, weight: .medium))
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color.themePrimary.opacity(0.1))
-            .foregroundStyle(Color.themePrimary)
-            .clipShape(Capsule())
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(color.opacity(0.12))
+            )
+            .foregroundStyle(color)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(color.opacity(0.2), lineWidth: 1)
+            )
         }
+        .buttonStyle(.plain)
     }
 }
 

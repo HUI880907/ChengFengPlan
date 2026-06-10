@@ -109,6 +109,10 @@ struct SettingsView: View {
         }
     }
 
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -380,6 +384,9 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("设置")
+            .onTapGesture {
+                hideKeyboard()
+            }
             .onAppear {
                 loadSettings()
             }

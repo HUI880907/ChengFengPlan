@@ -17,6 +17,10 @@ struct TaskListView: View {
     @State private var showingPriorityPicker = false
     @State private var navigationTask: TaskItem? = nil
 
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
@@ -66,6 +70,11 @@ struct TaskListView: View {
                     }
                 }
                 .listStyle(.plain)
+                .onTapGesture {
+                    if !isMultiSelectMode {
+                        hideKeyboard()
+                    }
+                }
                 .navigationTitle("任务列表")
                 .searchable(text: $searchText, prompt: "搜索任务")
                 .onChange(of: searchText) { _, newValue in
@@ -73,26 +82,26 @@ struct TaskListView: View {
                 }
                 .toolbar {
                     if isMultiSelectMode {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button {
-                                cancelMultiSelect()
-                            } label: {
-                                Text("取消")
-                            }
-                        }
                         ToolbarItem(placement: .principal) {
                             Text("已选择 \(selectedTaskIds.count) 项")
                                 .font(.headline)
                         }
                         ToolbarItem(placement: .topBarTrailing) {
-                            Button {
-                                if selectedTaskIds.count == taskStore.filteredAndSortedTasks().count {
-                                    selectedTaskIds.removeAll()
-                                } else {
-                                    selectedTaskIds = Set(taskStore.filteredAndSortedTasks().map { $0.id })
+                            HStack(spacing: 16) {
+                                Button {
+                                    cancelMultiSelect()
+                                } label: {
+                                    Text("取消")
                                 }
-                            } label: {
-                                Text(selectedTaskIds.count == taskStore.filteredAndSortedTasks().count ? "取消全选" : "全选")
+                                Button {
+                                    if selectedTaskIds.count == taskStore.filteredAndSortedTasks().count {
+                                        selectedTaskIds.removeAll()
+                                    } else {
+                                        selectedTaskIds = Set(taskStore.filteredAndSortedTasks().map { $0.id })
+                                    }
+                                } label: {
+                                    Text(selectedTaskIds.count == taskStore.filteredAndSortedTasks().count ? "取消全选" : "全选")
+                                }
                             }
                         }
                     } else {
